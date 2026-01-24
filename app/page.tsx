@@ -1,65 +1,166 @@
-import Image from "next/image";
+"use client"
+import { useForm } from "react-hook-form"
+import { useState, useCallback } from "react"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { projectSchema } from "@/schemas/project"
+import { createProject } from "@/actions/project"
+import { toast } from "sonner"
+import { RegistrationForm } from "@/components/RegistrationForm"
+import { SuccessDialog } from "@/components/SuccessDialog"
+import { getClassroomByAge } from "@/lib/classroom"
+import type { FormData } from "@/components/types"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
+import { Users, ArrowLeft, Building2 } from "lucide-react"
 
-export default function Home() {
+const Home = () => {
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false)
+  const [inscriptionData, setInscriptionData] = useState<FormData | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const form = useForm<FormData>({
+    defaultValues: {
+      childName: "",
+      childLastname: "",
+      age: 3,
+      gender: "niño",
+      parentName: "",
+      parentPhone: "",
+      classroom: getClassroomByAge(3),
+    },
+    resolver: zodResolver(projectSchema),
+    mode: "onChange"
+  })
+
+  const onSubmit = useCallback(async (data: FormData) => {
+    setIsSubmitting(true)
+
+    try {
+      const res = await createProject(data)
+
+      if (res.success) {
+        setInscriptionData(data)
+        setShowSuccessDialog(true)
+        form.reset({
+          childName: "",
+          childLastname: "",
+          age: 3,
+          gender: "niño",
+          parentName: "",
+          parentPhone: "",
+          classroom: getClassroomByAge(3),
+        })
+        toast.success("¡Inscripción completada exitosamente!")
+      } else {
+        toast.error(res.error || "Error al realizar la inscripción. Por favor revise los datos.")
+      }
+    } catch (error) {
+      toast.error("Error inesperado. Por favor intenta de nuevo más tarde.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }, [form])
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen relative overflow-hidden" role="main">
+      {/* Fondo */}
+      <img src={"/images/ebdv-bg.jpg"} alt="Imagen" className="bg-cover w-full h-full overflow-hidden -z-10 absolute" />
+      <div className="fixed inset-0 bg-primary/10 backdrop-blur-xl"></div>
+      
+      <div className="relative z-10 py-8 px-4">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <header className="text-center mb-8">
+            <h1 className="text-4xl sm:text-7xl font-bold mb-3 drop-shadow-lg">
+              <span className="text-red-500 drop-shadow-[2px_2px_4px_rgba(0,0,0,0.5)]">E</span>
+              <span className="text-green-500 drop-shadow-[2px_2px_4px_rgba(0,0,0,0.5)]">B</span>
+              <span className="text-orange-500 drop-shadow-[2px_2px_4px_rgba(0,0,0,0.5)]">D</span>
+              <span className="text-blue-500 drop-shadow-[2px_2px_4px_rgba(0,0,0,0.5)]">V</span>
+              <span className="text-primary drop-shadow-[2px_2px_4px_rgba(0,0,0,0.5)]">2026</span>
+            </h1>
+            <p className="text-lg text-primary-foreground drop-shadow-lg mb-2">
+              Escuela Bíblica Dominical
+            </p>
+            <p className="text-sm text-muted-foreground drop-shadow">
+              Domingos 3:00 PM • {new Date().toLocaleDateString('es-PE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
+          </header>
+
+          {/* Cards de Acceso Doble */}
+          <div className="grid md:grid-cols-2 gap-8 mb-8">
+            {/* Card para Padres */}
+            <Card className="bg-card border-2 border-green-200 shadow-lg hover:shadow-xl transition-all duration-200">
+              <CardContent className="p-8 text-center">
+                <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-md">
+                  <Users className="w-10 h-10 text-white" />
+                </div>
+                <h2 className="text-3xl font-bold mb-4 text-foreground">
+                  Para Padres
+                </h2>
+                <p className="text-muted-foreground mb-6 text-lg">
+                  Inscribe a tus hijos en la EBDV 2026
+                </p>
+                <Link href="/inscribir">
+                  <Button size="lg" className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-3 text-lg">
+                    Inscribir Alumno
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Card para Staff */}
+            <Card className="bg-card border-2 border-purple-200 shadow-lg hover:shadow-xl transition-all duration-200">
+              <CardContent className="p-8 text-center">
+                <div className="w-20 h-20 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-md">
+                  <Building2 className="w-10 h-10 text-white" />
+                </div>
+                <h2 className="text-3xl font-bold mb-4 text-foreground">
+                  Para Staff
+                </h2>
+                <p className="text-muted-foreground mb-6 text-lg">
+                  Acceso al sistema de evaluación
+                </p>
+                <Link href="/staff">
+                  <Button size="lg" className="w-full bg-secondary hover:bg-secondary text-secondary-foreground font-medium py-3 text-lg">
+                    Portal Staff
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Info Rápida */}
+          <Card className="bg-card shadow-md border-border">
+            <CardContent className="p-6 text-center">
+              <div className="grid md:grid-cols-3 gap-4 text-sm text-muted-foreground">
+                <div>
+                  <span className="font-semibold text-foreground">📍 Ubicación:</span> [Tu Iglesia]
+                </div>
+                <div>
+                  <span className="font-semibold text-foreground">⏰ Hora:</span> 3:00 PM
+                </div>
+                <div>
+                  <span className="font-semibold text-foreground">📞 Contacto:</span> [Tu Teléfono]
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-border">
+                <p className="text-xs text-muted-foreground">
+                  © 2026 Escuela Bíblica Dominical • Todos los derechos reservados
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </div>
+
+      <SuccessDialog
+        open={showSuccessDialog}
+        onOpenChange={setShowSuccessDialog}
+        inscriptionData={inscriptionData}
+      />
     </div>
-  );
+  )
 }
+
+export default Home
