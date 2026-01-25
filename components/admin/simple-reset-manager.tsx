@@ -61,12 +61,13 @@ export function SimpleResetManager() {
     setIsResetting(true)
     
     try {
-      const today = new Date().toISOString().split('T')[0]
+      const today = new Date()
+      const todayISO = today.toISOString().split('T')[0]
       const currentUser = safeLocalStorage.getItem('staffName') || 'Admin'
       
       if (type === 'full') {
         // Reset completo del día
-        safeLocalStorage.setItem('lastManualReset', today)
+        safeLocalStorage.setItem('lastManualReset', todayISO)
         safeLocalStorage.setItem('lastManualResetTime', new Date().toISOString())
         
         // Limpiar estados de evaluación
@@ -90,7 +91,7 @@ export function SimpleResetManager() {
       } else {
         // Reset individual por salón
         const evaluations = JSON.parse(safeLocalStorage.getItem('currentEvaluations') || '{}')
-        const classroomKey = `${classroom}_${today}`
+        const classroomKey = `${classroom}_${todayISO}`
         
         delete evaluations[classroomKey]
         safeLocalStorage.setItem('currentEvaluations', JSON.stringify(evaluations))
@@ -118,13 +119,22 @@ export function SimpleResetManager() {
 
   const getResetStatus = () => {
     const lastReset = safeLocalStorage.getItem('lastManualReset')
-    const today = new Date().toISOString().split('T')[0]
-    const hasBeenResetToday = lastReset === today
+    const today = new Date()
+    const todayString = today.toLocaleDateString('es-ES', { 
+      year: 'numeric', 
+      month: '2-digit', 
+      day: '2-digit' 
+    }).replace(/\//g, '-')
+    const todayISO = today.toISOString().split('T')[0]
+    
+    // Para comparación, usamos ISO pero mostramos el formato legible
+    const hasBeenResetToday = lastReset === todayISO
     
     return {
       hasBeenResetToday,
       lastReset,
-      today,
+      today: todayString,
+      todayISO,
       needsReset: !hasBeenResetToday
     }
   }
