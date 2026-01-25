@@ -17,10 +17,10 @@ import { PreguntasSelector } from "@/components/ui/preguntas-selector"
 import { ScoreSelector } from "@/components/ui/score-selector"
 
 interface GrupalEvaluationForm {
-  puntualidad: 0 | 5 | 10
-  animo_y_barras: 0 | 10 | 20
-  orden: 0 | 10 | 20
-  verso_memoria: 0 | 10 | 20
+  puntualidad: 0 | 2.5 | 5 | 7.5 | 10
+  animo_y_barras: 0 | 5 | 10 | 15 | 20
+  orden: 0 | 5 | 10 | 15 | 20
+  verso_memoria: 0 | 5 | 10 | 15 | 20
   preguntas_correctas: 0 | 5 | 10 | 15 | 20 | 25 | 30
 }
 
@@ -34,7 +34,7 @@ export default function JuradosClassroomPage({ params }: { params: Promise<{ nam
       const className = resolvedParams.name
       setClassroomName(className)
       
-      // Cargar puntuación existente
+      // 🎯 LÓGICA INTELIGENTE DE CARGA
       try {
         const today = new Date().toISOString().split('T')[0]
         const classroomId = await getClassroomIdByName(className)
@@ -46,13 +46,25 @@ export default function JuradosClassroomPage({ params }: { params: Promise<{ nam
         const puntuacionExistente = await getPuntuacionGrupalHoy(classroomId, today)
         
         if (puntuacionExistente) {
+          // ✅ Si ya fue evaluado hoy, cargar valores existentes
           setEvaluation({
-            puntualidad: puntuacionExistente.puntualidad as 0 | 5 | 10,
-            animo_y_barras: puntuacionExistente.animo_y_barras as 0 | 10 | 20,
-            orden: puntuacionExistente.orden as 0 | 10 | 20,
-            verso_memoria: puntuacionExistente.verso_memoria as 0 | 10 | 20,
+            puntualidad: puntuacionExistente.puntualidad as 0 | 2.5 | 5 | 7.5 | 10,
+            animo_y_barras: puntuacionExistente.animo_y_barras as 0 | 5 | 10 | 15 | 20,
+            orden: puntuacionExistente.orden as 0 | 5 | 10 | 15 | 20,
+            verso_memoria: puntuacionExistente.verso_memoria as 0 | 5 | 10 | 15 | 20,
             preguntas_correctas: puntuacionExistente.preguntas_correctas as 0 | 5 | 10 | 15 | 20 | 25 | 30
           })
+          console.log('✅ Cargando evaluación grupal existente del día')
+        } else {
+          // ✅ Si no ha sido evaluado hoy, iniciar con valores base
+          setEvaluation({
+            puntualidad: 0,
+            animo_y_barras: 0,
+            orden: 0,
+            verso_memoria: 0,
+            preguntas_correctas: 0
+          })
+          console.log('🆕 Iniciando nueva evaluación grupal (valores base)')
         }
       } catch (error) {
         console.error('Error loading puntuacion existente:', error)
@@ -86,7 +98,7 @@ export default function JuradosClassroomPage({ params }: { params: Promise<{ nam
   }
 
   const getGrade = (score: number) => {
-    const maxScore = 90 // Maximum possible score
+    const maxScore = 100 // Maximum possible score (10 + 20 + 20 + 20 + 30)
     const percentage = (score / maxScore) * 100
 
     if (percentage >= 90) return { grade: "Excelente", color: "bg-green-100 text-green-700 border-green-300" }
@@ -166,7 +178,7 @@ export default function JuradosClassroomPage({ params }: { params: Promise<{ nam
 
   const totalScore = calculateTotal()
   const grade = getGrade(totalScore)
-  const maxScore = 90
+  const maxScore = 100
   const percentage = Math.round((totalScore / maxScore) * 100)
 
   return (
@@ -220,53 +232,58 @@ export default function JuradosClassroomPage({ params }: { params: Promise<{ nam
             <CardContent className="space-y-8">
               <ScoreSelector
                 value={evaluation.puntualidad}
-                onChange={(value) => setEvaluation(prev => ({ ...prev, puntualidad: value as 0 | 5 | 10 }))}
+                onChange={(value) => setEvaluation(prev => ({ ...prev, puntualidad: value as 0 | 2.5 | 5 | 7.5 | 10 }))}
                 disabled={isSaving}
                 label="Puntualidad"
                 description="Puntualidad del salón al inicio de la actividad"
                 options={[
-                  { value: 0, label: "Tarde (0 pts)" },
-                  { value: 5, label: "Parcial (5 pts)" },
-                  { value: 10, label: "A tiempo (10 pts)" }
+                  { value: 0, label: "0%" },
+                  { value: 2.5, label: "25%" },
+                  { value: 5, label: "50%" },
+                  { value: 7.5, label: "75%" },
+                  { value: 10, label: "100%" }
                 ]}
               />
 
               <ScoreSelector
                 value={evaluation.animo_y_barras}
-                onChange={(value) => setEvaluation(prev => ({ ...prev, animo_y_barras: value as 0 | 10 | 20 }))}
+                onChange={(value) => setEvaluation(prev => ({ ...prev, animo_y_barras: value as 0 | 5 | 10 | 15 | 20 }))}
                 disabled={isSaving}
                 label="Ánimo y Barras"
                 description="Participación y entusiasmo del salón"
                 options={[
-                  { value: 0, label: "Bajo (0 pts)" },
+                  { value: 5, label: "Malo (5 pts)" },
                   { value: 10, label: "Regular (10 pts)" },
+                  { value: 15, label: "Bueno (15 pts)" },
                   { value: 20, label: "Excelente (20 pts)" }
                 ]}
               />
 
               <ScoreSelector
                 value={evaluation.orden}
-                onChange={(value) => setEvaluation(prev => ({ ...prev, orden: value as 0 | 10 | 20 }))}
+                onChange={(value) => setEvaluation(prev => ({ ...prev, orden: value as 0 | 5 | 10 | 15 | 20 }))}
                 disabled={isSaving}
                 label="Orden"
                 description="Comportamiento y disciplina durante la actividad"
                 options={[
-                  { value: 0, label: "Desordenado (0 pts)" },
-                  { value: 10, label: "Parcial (10 pts)" },
-                  { value: 20, label: "Ordenado (20 pts)" }
+                  { value: 5, label: "Malo (5 pts)" },
+                  { value: 10, label: "Regular (10 pts)" },
+                  { value: 15, label: "Bueno (15 pts)" },
+                  { value: 20, label: "Excelente (20 pts)" }
                 ]}
               />
 
               <ScoreSelector
                 value={evaluation.verso_memoria}
-                onChange={(value) => setEvaluation(prev => ({ ...prev, verso_memoria: value as 0 | 10 | 20 }))}
+                onChange={(value) => setEvaluation(prev => ({ ...prev, verso_memoria: value as 0 | 5 | 10 | 15 | 20 }))}
                 disabled={isSaving}
                 label="Verso de Memoria"
                 description="Memorización y recitación del verso bíblico"
                 options={[
-                  { value: 0, label: "No recitó (0 pts)" },
-                  { value: 10, label: "Parcial (10 pts)" },
-                  { value: 20, label: "Completo (20 pts)" }
+                  { value: 5, label: "Malo (5 pts)" },
+                  { value: 10, label: "Regular (10 pts)" },
+                  { value: 15, label: "Bueno (15 pts)" },
+                  { value: 20, label: "Excelente (20 pts)" }
                 ]}
               />
 

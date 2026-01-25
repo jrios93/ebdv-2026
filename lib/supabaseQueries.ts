@@ -40,7 +40,7 @@ export interface PuntuacionGrupalDiaria {
   id: string
   classroom_id: string
   fecha: string
-  puntualidad: number
+  puntualidad: number  // Ahora puede ser decimal (0, 2.5, 5, 7.5, 10)
   animo_y_barras: number
   orden: number
   verso_memoria: number
@@ -200,11 +200,33 @@ export async function savePuntuacionGrupal(
   puntuacion: Omit<PuntuacionGrupalDiaria, 'id' | 'created_at'>
 ): Promise<boolean> {
   try {
-    const { error } = await supabase
+    // Primero verificar si ya existe un registro para este classroom y fecha
+    const { data: existingRecord, error: checkError } = await supabase
       .from('puntuacion_grupal_diaria')
-      .insert(puntuacion)
+      .select('id')
+      .eq('classroom_id', puntuacion.classroom_id)
+      .eq('fecha', puntuacion.fecha)
+      .single()
 
-    if (error) throw error
+    if (checkError && checkError.code !== 'PGRST116') {
+      throw checkError
+    }
+
+    let result;
+    if (existingRecord) {
+      // Si existe, actualizar
+      result = await supabase
+        .from('puntuacion_grupal_diaria')
+        .update(puntuacion)
+        .eq('id', existingRecord.id)
+    } else {
+      // Si no existe, insertar
+      result = await supabase
+        .from('puntuacion_grupal_diaria')
+        .insert(puntuacion)
+    }
+
+    if (result.error) throw result.error
     return true
   } catch (error) {
     console.error('Error saving puntuacion grupal:', error)

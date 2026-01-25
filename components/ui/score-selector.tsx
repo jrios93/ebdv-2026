@@ -24,7 +24,7 @@ export function ScoreSelector({
       <h4 className="font-medium text-sm text-foreground">{label}</h4>
       <p className="text-xs text-muted-foreground">{description}</p>
       
-      <div className="grid grid-cols-3 gap-2">
+      <div className={`grid gap-2 ${options.length === 5 ? 'grid-cols-5' : 'grid-cols-4'}`}>
         {options.map((option) => {
           const isSelected = value === option.value
           
@@ -41,18 +41,12 @@ export function ScoreSelector({
                 disabled && "opacity-50 cursor-not-allowed"
               )}
             >
-              <div className="px-3 py-2 text-center">
+              <div className="px-2 py-2 text-center">
                 <div className={cn(
                   "font-bold text-sm",
                   isSelected ? "text-primary-foreground" : "text-foreground"
                 )}>
-                  {option.label.split('(')[0].trim()}
-                </div>
-                <div className={cn(
-                  "text-xs",
-                  isSelected ? "text-primary-foreground/80" : "text-muted-foreground"
-                )}>
-                  ({option.label.split('(')[1]})
+                  {option.label}
                 </div>
               </div>
             </button>

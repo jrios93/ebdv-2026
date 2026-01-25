@@ -120,9 +120,10 @@ export const RegistrationForm = ({ form, isSubmitting, onSubmit }: RegistrationF
                     placeholder="Ejm: 925 439 390 "
                     className="bg-background px-4 py-6"
                     disabled={isSubmitting}
+                    value={field.value || ''}  // Asegurar que siempre tenga valor
                     onChange={(e) => {
                       const formatted = formatPhoneNumber(e.target.value)
-                      field.onChange(formatted)
+                      field.onChange(formatted || undefined)  // Si está vacío, enviar undefined
                     }}
                   />
                   {fieldState.invalid && fieldState.error && (

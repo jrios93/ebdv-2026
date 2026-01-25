@@ -1,9 +1,9 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Users, Trophy, Star, Heart, LogOut, Clock, Shield, TrendingUp, Award, UserPlus, Download, Calendar } from "lucide-react"
+import { Users, Trophy, Star, Heart, LogOut, Clock, Shield, TrendingUp, Award, UserPlus, Download, Calendar, RotateCcw } from "lucide-react"
 import { StaffGuard } from "@/components/StaffGuard"
 import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
@@ -24,6 +24,7 @@ import {
   getInvitadosLevel
 } from "@/lib/invitados"
 import { SimpleResetManager } from "@/components/admin/simple-reset-manager"
+import { useManualLoad } from "@/hooks/useManualLoad"
 import { FaBible, FaDove, FaSeedling } from "react-icons/fa"
 import { IoSunnySharp } from "react-icons/io5"
 
@@ -36,77 +37,61 @@ interface Stats {
 }
 
 export default function AdminPage() {
-  const [stats, setStats] = useState<Stats>({
+  // Carga manual de datos del dashboard
+  const loadDashboardData = async () => {
+    try {
+      const [statsData, alumnosData, rankingData, invitadosData, salonData, semanalData, invitadosRankingData, campeonData, totalInvitadosData] = await Promise.all([
+        getStatsDashboard(),
+        getTopAlumnosToday(5),
+        getClassroomRankingToday(),
+        getTopInvitadosToday(3),
+        getAlumnosPorSalon(),
+        getResumenSemanal(),
+        getRankingInvitados(7),
+        getCampeonInvitados(7),
+        getTotalInvitadosPeriodo(7)
+      ])
+
+      return {
+        stats: statsData,
+        topAlumnos: alumnosData || [],
+        classroomRanking: rankingData || [],
+        topInvitados: invitadosData || [],
+        alumnosPorSalon: salonData || [],
+        resumenSemanal: semanalData,
+        rankingInvitados: invitadosRankingData || [],
+        campeonInvitadosActual: campeonData,
+        totalInvitadosPeriodo: totalInvitadosData || 0
+      }
+    } catch (error) {
+      console.error('Error loading dashboard:', error)
+      throw error
+    }
+  }
+
+  const { data: dashboardData, loading: isLoading, lastUpdate, reload } = useManualLoad(loadDashboardData, true)
+  const [isExporting, setIsExporting] = useState(false)
+
+  // Estados extraídos de los datos cargados
+  const stats = dashboardData?.stats || {
     totalAlumnos: 0,
     evaluacionesHoy: 0,
     totalHoy: 0,
     mejorClassroom: null,
     puntualidadAsistencia: 0
-  })
-  const [topAlumnos, setTopAlumnos] = useState<any[]>([])
-  const [classroomRanking, setClassroomRanking] = useState<any[]>([])
-  const [topInvitados, setTopInvitados] = useState<any[]>([])
-  const [alumnosPorSalon, setAlumnosPorSalon] = useState<Array<{ salon: string, cantidad: number, asistidos: number }>>([])
-  const [resumenSemanal, setResumenSemanal] = useState<{
-    rankingAlumnos: Array<{
-      alumno: any
-      totalPuntos: number
-      totalInvitados: number
-      posicion: number
-    }>
-    rankingSalones: Array<{
-      salon: string
-      totalPuntos: number
-      posicion: number
-    }>
-    campeonInvitados: {
-      alumno: any
-      totalInvitados: number
-    } | null
-  }>({ rankingAlumnos: [], rankingSalones: [], campeonInvitados: null })
-
-  // Estados adicionales para invitados
-  const [rankingInvitados, setRankingInvitados] = useState<any[]>([])
-  const [campeonInvitadosActual, setCampeonInvitadosActual] = useState<any>(null)
-  const [totalInvitadosPeriodo, setTotalInvitadosPeriodo] = useState<number>(0)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isExporting, setIsExporting] = useState(false)
-
-  useEffect(() => {
-    const loadDashboardData = async () => {
-      try {
-        const [statsData, alumnosData, rankingData, invitadosData, salonData, semanalData, invitadosRankingData, campeonData, totalInvitadosData] = await Promise.all([
-          getStatsDashboard(),
-          getTopAlumnosToday(5),
-          getClassroomRankingToday(),
-          getTopInvitadosToday(3),
-          getAlumnosPorSalon(),
-          getResumenSemanal(),
-          getRankingInvitados(7),
-          getCampeonInvitados(7),
-          getTotalInvitadosPeriodo(7)
-        ])
-
-        setStats(statsData)
-        setTopAlumnos(alumnosData || [])
-        setClassroomRanking(rankingData || [])
-        setTopInvitados(invitadosData || [])
-        setAlumnosPorSalon(salonData || [])
-        setResumenSemanal(semanalData)
-
-        // Datos de invitados (acumulados)
-        setRankingInvitados(invitadosRankingData || [])
-        setCampeonInvitadosActual(campeonData)
-        setTotalInvitadosPeriodo(totalInvitadosData || 0)
-      } catch (error) {
-        console.error('Error loading dashboard:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadDashboardData()
-  }, [])
+  }
+  const topAlumnos = dashboardData?.topAlumnos || []
+  const classroomRanking = dashboardData?.classroomRanking || []
+  const topInvitados = dashboardData?.topInvitados || []
+  const alumnosPorSalon = dashboardData?.alumnosPorSalon || []
+  const resumenSemanal = dashboardData?.resumenSemanal || {
+    rankingAlumnos: [],
+    rankingSalones: [],
+    campeonInvitados: null
+  }
+  const rankingInvitados = dashboardData?.rankingInvitados || []
+  const campeonInvitadosActual = dashboardData?.campeonInvitadosActual || null
+  const totalInvitadosPeriodo = dashboardData?.totalInvitadosPeriodo || 0
 
   const exportEvaluacionesToExcel = async () => {
     setIsExporting(true)
@@ -512,7 +497,7 @@ export default function AdminPage() {
             </Card>
           </div>
 
-          {/* Logout */}
+          {/* Acciones de admin */}
           <div className="text-center">
             <Button
               onClick={handleLogout}

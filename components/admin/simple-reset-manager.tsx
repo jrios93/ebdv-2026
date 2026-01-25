@@ -157,119 +157,34 @@ export function SimpleResetManager() {
     <Card className="border-border">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <RefreshCw className="w-5 h-5" />
-          Reseteo Manual de Evaluaciones
+          <CheckCircle className="w-5 h-5 text-green-600" />
+          Sistema de Evaluaciones Automático
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Para reiniciar los valores diarios cuando comience un nuevo día de evaluaciones
+          Los formularios inician automáticamente en valores predeterminados cada nuevo día
         </p>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Estado Actual */}
-        <div className={`p-4 rounded-lg border ${
-          resetStatus.hasBeenResetToday 
-            ? 'bg-green-50 border-green-200' 
-            : 'bg-yellow-50 border-yellow-200'
-        }`}>
+      <CardContent className="space-y-4">
+        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
           <div className="flex items-center gap-2 mb-2">
-            {resetStatus.hasBeenResetToday ? (
-              <CheckCircle className="w-4 h-4 text-green-600" />
-            ) : (
-              <AlertTriangle className="w-4 h-4 text-yellow-600" />
-            )}
-            <span className="font-medium">
-              {resetStatus.hasBeenResetToday ? 'Día ya reseteado' : 'Pendiente de reseteo'}
-            </span>
+            <CheckCircle className="w-4 h-4 text-green-600" />
+            <span className="font-medium text-green-700">Sistema Automático Activo</span>
           </div>
           <div className="text-sm space-y-1">
-            <div>📅 Fecha actual: <strong>{resetStatus.today}</strong></div>
-            {resetStatus.lastReset && (
-              <div>🔄 Último reseteo: <strong>{resetStatus.lastReset}</strong></div>
-            )}
-            <div className="text-xs mt-2">
-              {resetStatus.hasBeenResetToday 
-                ? '✅ Los formularios están listos para nuevas evaluaciones'
-                : '⚠️ Se recomienda resetear antes de empezar nuevas evaluaciones'
-              }
-            </div>
+            <div>✅ Formularios listos para evaluación diaria</div>
+            <div>✅ Cada nuevo día inicia con valores predeterminados</div>
+            <div>✅ Sin confusión entre días diferentes</div>
+            <div>✅ Datos guardados correctamente por fecha</div>
           </div>
         </div>
 
-        {/* Botones de Reset */}
-        <div className="space-y-4">
-          <div>
-            <h4 className="text-sm font-medium mb-2">Reseteo General</h4>
-            <Button
-              onClick={() => performManualReset('full')}
-              disabled={isResetting}
-              className="w-full"
-              variant={resetStatus.needsReset ? "default" : "outline"}
-            >
-              {isResetting ? (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Reseteando...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Resetear Todas las Evaluaciones del Día
-                </>
-              )}
-            </Button>
-            <p className="text-xs text-muted-foreground mt-1">
-              Establece todos los valores a 0 para un nuevo día de evaluaciones
-            </p>
-          </div>
-
-          <div>
-            <h4 className="text-sm font-medium mb-2">Reset Individual por Salón</h4>
-            <div className="grid grid-cols-2 gap-2">
-              {['vida', 'luz', 'gracia', 'verdad'].map((classroom) => (
-                <Button
-                  key={classroom}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => performManualReset('individual', classroom)}
-                  disabled={isResetting}
-                  className="text-xs"
-                >
-                  <Users className="w-3 h-3 mr-1" />
-                  Resetear {classroom}
-                </Button>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Para resetear solo un salón específico si hay problemas
-            </p>
-          </div>
-        </div>
-
-        {/* Historial de Reseteos */}
-        {resetHistory.length > 0 && (
-          <div>
-            <h4 className="text-sm font-medium mb-2">Historial Reciente</h4>
-            <div className="space-y-2">
-              {resetHistory.map((entry, index) => (
-                <div key={index} className="text-xs p-2 bg-gray-50 rounded border">
-                  <div className="font-medium">{entry.date}</div>
-                  <div className="text-gray-600">
-                    {entry.user} - {entry.reason}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Información Importante */}
         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <h4 className="text-sm font-medium text-blue-700 mb-1">📋 Información Importante</h4>
           <ul className="text-xs text-blue-600 space-y-1">
-            <li>• <strong>Cuándo resetear:</strong> Al comenzar un nuevo día de evaluaciones</li>
-            <li>• <strong>Qué sucede:</strong> Todos los valores se establecen en 0</li>
-            <li>• <strong>Seguridad:</strong> Los datos anteriores quedan guardados por fecha</li>
-            <li>• <strong>Flexibilidad:</strong> Los maestros pueden seguir evaluando aunque no se resetee inmediatamente</li>
+            <li>• <strong>Inicio automático:</strong> Los formularios inician con valores base cada día</li>
+            <li>• <strong>Sobreescribir permitido:</strong> Se pueden modificar los valores al evaluar</li>
+            <li>• <strong>Guardado por fecha:</strong> Cada día mantiene sus propios registros</li>
+            <li>• <strong>No requiere intervención:</strong> Sin necesidad de reseteos manuales</li>
           </ul>
         </div>
       </CardContent>

@@ -55,12 +55,12 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
         setAlumno(alumnoData)
 
         // Verificar si ya tiene puntuación hoy
-        if (!alumnoId) return
         const today = new Date().toISOString().split('T')[0]
         const puntuacionExistente = await getPuntuacionIndividualHoy(alumnoId, today)
 
+        // 🎯 LÓGICA INTELIGENTE DE CARGA
         if (puntuacionExistente) {
-          // Cargar evaluación existente
+          // ✅ Si ya fue evaluado hoy, cargar valores existentes
           setEvaluation({
             actitud: puntuacionExistente.actitud as 0 | 5 | 10,
             puntualidad_asistencia: puntuacionExistente.puntualidad_asistencia as 0 | 5 | 10,
@@ -70,6 +70,19 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
             aprestamiento_biblico: puntuacionExistente.aprestamiento_biblico as 0 | 15 | 30,
             invitados_hoy: puntuacionExistente.invitados_hoy
           })
+          console.log('✅ Cargando evaluación existente del día')
+        } else {
+          // ✅ Si no ha sido evaluado hoy, iniciar con valores base
+          setEvaluation({
+            actitud: 5,
+            puntualidad_asistencia: 5,
+            animo: 5,
+            trabajo_manual: 5,
+            verso_memoria: 15,
+            aprestamiento_biblico: 15,
+            invitados_hoy: 0
+          })
+          console.log('🆕 Iniciando nueva evaluación (valores base)')
         }
       } catch (error) {
         console.error('Error loading alumno:', error)
@@ -167,6 +180,8 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
 
   const totalScore = calculateTotal()
   const grade = getGrade(totalScore)
+  const maxScore = 100  // Máximo posible: 10+10+10+10+30+30 = 100
+  const percentage = Math.round((totalScore / maxScore) * 100)
 
   return (
     <StaffGuard role="maestro">
@@ -202,7 +217,8 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
 
               <div className="text-right">
                 <div className="text-sm text-muted-foreground">Puntuación Total</div>
-                <div className="text-3xl font-bold text-foreground">{totalScore}</div>
+                <div className="text-3xl font-bold text-foreground">{totalScore}/{maxScore}</div>
+                <div className="text-lg text-muted-foreground">{percentage}%</div>
                 <Badge className={grade.color}>
                   {grade.grade}
                 </Badge>
