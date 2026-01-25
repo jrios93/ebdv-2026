@@ -13,6 +13,8 @@ import {
   savePuntuacionIndividual, 
   getPuntuacionIndividualHoy 
 } from "@/lib/supabaseQueries"
+import { ScoreSelector } from "@/components/ui/score-selector"
+import { PreguntasSelector } from "@/components/ui/preguntas-selector"
 
 interface EvaluationForm {
   actitud: 0 | 5 | 10
@@ -147,33 +149,7 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
     }
   }
 
-  const TabSelector = ({ 
-    label, 
-    field, 
-    options 
-  }: { 
-    label: string
-    field: keyof EvaluationForm
-    options: { value: number; label: string }[] 
-  }) => (
-    <div className="space-y-2">
-      <h4 className="font-medium text-sm text-foreground">{label}</h4>
-      <div className="flex gap-2">
-        {options.map((option) => (
-          <Button
-            key={option.value}
-            type="button"
-            variant={evaluation[field] === option.value ? "default" : "outline"}
-            size="sm"
-            className={`flex-1 ${evaluation[field] === option.value ? 'bg-primary text-primary-foreground' : 'border-border text-muted-foreground'}`}
-            onClick={() => setEvaluation(prev => ({ ...prev, [field]: option.value as any }))}
-          >
-            {option.label}
-          </Button>
-        ))}
-      </div>
-    </div>
-  )
+
 
   if (!alumno) {
     return (
@@ -243,9 +219,11 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <TabSelector
+                <ScoreSelector
                   label="Actitud"
-                  field="actitud"
+                  description="Comportamiento y colaboración durante las actividades"
+                  value={evaluation.actitud}
+                  onChange={(value) => setEvaluation(prev => ({ ...prev, actitud: value as 0 | 5 | 10 }))}
                   options={[
                     { value: 0, label: "No cumple (0)" },
                     { value: 5, label: "Parcial (5)" },
@@ -253,9 +231,11 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
                   ]}
                 />
                 
-                <TabSelector
+                <ScoreSelector
                   label="Puntualidad y Asistencia"
-                  field="puntualidad_asistencia"
+                  description="Llegada a tiempo y presencia durante la sesión"
+                  value={evaluation.puntualidad_asistencia}
+                  onChange={(value) => setEvaluation(prev => ({ ...prev, puntualidad_asistencia: value as 0 | 5 | 10 }))}
                   options={[
                     { value: 0, label: "No cumple (0)" },
                     { value: 5, label: "Parcial (5)" },
@@ -263,9 +243,11 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
                   ]}
                 />
                 
-                <TabSelector
+                <ScoreSelector
                   label="Ánimo y Participación"
-                  field="animo"
+                  description="Entusiasmo y participación activa en las actividades"
+                  value={evaluation.animo}
+                  onChange={(value) => setEvaluation(prev => ({ ...prev, animo: value as 0 | 5 | 10 }))}
                   options={[
                     { value: 0, label: "No cumple (0)" },
                     { value: 5, label: "Parcial (5)" },
@@ -273,9 +255,35 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
                   ]}
                 />
                 
-                <TabSelector
+                <ScoreSelector
                   label="Trabajo Manual"
-                  field="trabajo_manual"
+                  description="Calidad y finalización de las actividades manuales"
+                  value={evaluation.trabajo_manual}
+                  onChange={(value) => setEvaluation(prev => ({ ...prev, trabajo_manual: value as 0 | 5 | 10 }))}
+                  options={[
+                    { value: 0, label: "No cumple (0)" },
+                    { value: 5, label: "Parcial (5)" },
+                    { value: 10, label: "Cumple (10)" }
+                  ]}
+                />
+                
+                <ScoreSelector
+                  label="Ánimo y Participación"
+                  description="Entusiasmo y participación activa en las actividades"
+                  value={evaluation.animo}
+                  onChange={(value) => setEvaluation(prev => ({ ...prev, animo: value as 0 | 5 | 10 }))}
+                  options={[
+                    { value: 0, label: "No cumple (0)" },
+                    { value: 5, label: "Parcial (5)" },
+                    { value: 10, label: "Cumple (10)" }
+                  ]}
+                />
+                
+                <ScoreSelector
+                  label="Trabajo Manual"
+                  description="Calidad y finalización de las actividades manuales"
+                  value={evaluation.trabajo_manual}
+                  onChange={(value) => setEvaluation(prev => ({ ...prev, trabajo_manual: value as 0 | 5 | 10 }))}
                   options={[
                     { value: 0, label: "No cumple (0)" },
                     { value: 5, label: "Parcial (5)" },
@@ -293,9 +301,11 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <TabSelector
+                <ScoreSelector
                   label="Verso de Memoria"
-                  field="verso_memoria"
+                  description="Memorización y recitación del versículo bíblico del día"
+                  value={evaluation.verso_memoria}
+                  onChange={(value) => setEvaluation(prev => ({ ...prev, verso_memoria: value as 0 | 15 | 30 }))}
                   options={[
                     { value: 0, label: "No recita (0)" },
                     { value: 15, label: "Parcial (15)" },
@@ -303,9 +313,11 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
                   ]}
                 />
                 
-                <TabSelector
+                <ScoreSelector
                   label="Aprestamiento Bíblico"
-                  field="aprestamiento_biblico"
+                  description="Comprensión y aplicación de la enseñanza bíblica"
+                  value={evaluation.aprestamiento_biblico}
+                  onChange={(value) => setEvaluation(prev => ({ ...prev, aprestamiento_biblico: value as 0 | 15 | 30 }))}
                   options={[
                     { value: 0, label: "No cumple (0)" },
                     { value: 15, label: "Parcial (15)" },
@@ -313,25 +325,18 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
                   ]}
                 />
                 
-                <div className="space-y-2">
-                  <label className="font-medium text-sm text-foreground">
-                    Invitados Hoy
-                  </label>
-                  <div className="flex gap-2">
-                    {[0, 1, 2, 3].map((num) => (
-                      <Button
-                        key={num}
-                        type="button"
-                        variant={evaluation.invitados_hoy === num ? "default" : "outline"}
-                        size="sm"
-                        className={`flex-1 ${evaluation.invitados_hoy === num ? 'bg-primary text-primary-foreground' : 'border-border text-muted-foreground'}`}
-                        onClick={() => setEvaluation(prev => ({ ...prev, invitados_hoy: num }))}
-                      >
-                        {num}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
+                <ScoreSelector
+                  label="Invitados Hoy"
+                  description="Número de amigos que invitó a la EBDV"
+                  value={evaluation.invitados_hoy}
+                  onChange={(value) => setEvaluation(prev => ({ ...prev, invitados_hoy: value }))}
+                  options={[
+                    { value: 0, label: "Ninguno (0)" },
+                    { value: 1, label: "1 invitado (1)" },
+                    { value: 2, label: "2 invitados (2)" },
+                    { value: 3, label: "3 invitados (3)" }
+                  ]}
+                />
               </CardContent>
             </Card>
           </div>
