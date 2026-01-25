@@ -9,8 +9,6 @@ import { RegistrationForm } from "@/components/RegistrationForm"
 import { SuccessDialog } from "@/components/SuccessDialog"
 import { getClassroomByAge } from "@/lib/classroom"
 import type { FormData } from "@/components/types"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { Users, ArrowLeft } from "lucide-react"
 
@@ -67,26 +65,21 @@ const InscripcionPage = () => {
       {/* Fondo */}
       <img src={"/images/ebdv-bg.jpg"} alt="Imagen" className="bg-cover w-full h-full overflow-hidden -z-10 absolute" />
       <div className="fixed inset-0 bg-primary/10 backdrop-blur-xl"></div>
-      
+
       <div className="relative z-10 py-8 px-4">
         <div className="max-w-md mx-auto">
           {/* Header */}
           <div className="text-center mb-6">
-            <Link href="/" className="inline-flex items-center text-white hover:text-gray-200 mb-4 transition-colors">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Volver al inicio
-            </Link>
+
             <h1 className="text-4xl sm:text-6xl font-bold mb-3 text-white drop-shadow-lg">
               <span className="text-red-500 drop-shadow-[2px_2px_4px_rgba(0,0,0,0.5)]">E</span>
               <span className="text-green-500 drop-shadow-[2px_2px_4px_rgba(0,0,0,0.5)]">B</span>
               <span className="text-orange-500 drop-shadow-[2px_2px_4px_rgba(0,0,0,0.5)]">D</span>
               <span className="text-blue-500 drop-shadow-[2px_2px_4px_rgba(0,0,0,0.5)]">V</span>
-              <span className="text-purple-500 drop-shadow-[2px_2px_4px_rgba(0,0,0,0.5)]">2026</span>
+              <span className="text-accent drop-shadow-[2px_2px_4px_rgba(0,0,0,0.5)]">2026</span>
             </h1>
-            <h2 className="text-2xl font-bold text-white mb-2">Inscripción de Alumnos</h2>
-            <p className="text-gray-200">
-              {new Date().toLocaleDateString('es-PE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            </p>
+            <h2 className="text-2xl font-bold text-accent/50 mb-2">Inscripción de Niños(as)</h2>
+
           </div>
 
           {/* Formulario de Inscripción */}

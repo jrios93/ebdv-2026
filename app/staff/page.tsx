@@ -24,7 +24,7 @@ export default function StaffPortalPage() {
         localStorage.setItem("staffAuth", "true")
         localStorage.setItem("staffRole", selectedRole)
         localStorage.setItem("staffAuthTime", new Date().toISOString())
-        
+
         if (selectedRole === "maestro") {
           router.push("/staff/maestros")
         } else if (selectedRole === "jurado") {
@@ -44,20 +44,20 @@ export default function StaffPortalPage() {
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold mb-2 text-foreground">
-                <span className="text-red-500">E</span>
-                <span className="text-green-500">B</span>
-                <span className="text-orange-500">D</span>
-                <span className="text-blue-500">V</span>
-                <span className="text-primary">2026</span>
-              </h1>
-              <p className="text-muted-foreground">Portal de Staff y Maestros</p>
+          <h1 className="text-4xl font-bold mb-2 text-foreground">
+            <span className="text-red-500">E</span>
+            <span className="text-green-500">B</span>
+            <span className="text-orange-500">D</span>
+            <span className="text-blue-500">V</span>
+            <span className="text-primary">2026</span>
+          </h1>
+          <p className="text-muted-foreground">Portal de Staff y Maestros</p>
         </div>
 
         {/* Login Card */}
         <Card className="bg-card shadow-xl border-border">
           <CardHeader className="text-center">
-            <div className="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-accent rounded-full flex items-center justify-center mx-auto mb-4">
               <Shield className="w-8 h-8 text-white" />
             </div>
             <CardTitle className="text-2xl font-bold text-gray-800">
@@ -75,25 +75,25 @@ export default function StaffPortalPage() {
                 <Button
                   type="button"
                   variant={selectedRole === "maestro" ? "default" : "outline"}
-                  className={`h-auto p-4 flex flex-col items-center gap-2 ${
-                    selectedRole === "maestro" 
-                      ? "bg-blue-500 hover:bg-blue-600 text-white" 
-                      : "border-gray-300 text-gray-700 hover:bg-gray-50"
-                  }`}
+                  className={` cursor-pointer h-auto p-4 flex flex-col items-center gap-2 ${selectedRole === "maestro"
+                    ? "bg-blue-500 hover:bg-blue-600 text-white"
+
+                    : "border-accent text-gray-700 hover:bg-accent"
+                    }`}
                   onClick={() => setSelectedRole("maestro")}
                 >
                   <GraduationCap className="w-6 h-6" />
                   <span className="text-sm font-medium">Maestro</span>
                 </Button>
-                
+
                 <Button
                   type="button"
                   variant={selectedRole === "jurado" ? "default" : "outline"}
-                  className={`h-auto p-4 flex flex-col items-center gap-2 ${
-                    selectedRole === "jurado" 
-                      ? "bg-red-500 hover:bg-red-600 text-white" 
-                      : "border-gray-300 text-gray-700 hover:bg-gray-50"
-                  }`}
+                  className={`cursor-pointer h-auto p-4 flex flex-col items-center gap-2 ${selectedRole === "jurado"
+                    ? "bg-red-500 hover:bg-red-600 text-white"
+
+                    : "border-accent text-gray-700 hover:bg-accent"
+                    }`}
                   onClick={() => setSelectedRole("jurado")}
                 >
                   <Users className="w-6 h-6" />
@@ -103,11 +103,10 @@ export default function StaffPortalPage() {
                 <Button
                   type="button"
                   variant={selectedRole === "admin" ? "default" : "outline"}
-                  className={`h-auto p-4 flex flex-col items-center gap-2 ${
-                    selectedRole === "admin" 
-                      ? "bg-purple-500 hover:bg-purple-600 text-white" 
-                      : "border-gray-300 text-gray-700 hover:bg-gray-50"
-                  }`}
+                  className={`h-auto cursor-pointer p-4 flex flex-col items-center gap-2 ${selectedRole === "admin"
+                    ? "bg-chart-4/90 hover:bg-chart-4 text-white"
+                    : "border-accent text-gray-700 hover:bg-accent"
+                    }`}
                   onClick={() => setSelectedRole("admin")}
                 >
                   <Shield className="w-6 h-6" />
@@ -127,16 +126,16 @@ export default function StaffPortalPage() {
                   required
                 />
               </div>
-              
+
               {error && (
                 <div className="text-red-600 text-sm text-center">
                   {error}
                 </div>
               )}
 
-              <Button 
-                type="submit" 
-                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+              <Button
+                type="submit"
+                className="cursor-pointer w-full bg-accent/80 hover:bg-accent text-white"
                 disabled={isLoading || !selectedRole}
               >
                 {isLoading ? "Verificando..." : `Ingresar como ${selectedRole || "..."}`}
@@ -151,12 +150,7 @@ export default function StaffPortalPage() {
                   Acceso a lista de alumnos y evaluación individual
                 </div>
               )}
-              {selectedRole === "jurado" && (
-                <div>
-                  <Users className="w-4 h-4 inline mr-2" />
-                  Acceso a puntuación de salones
-                </div>
-              )}
+
               {selectedRole === "admin" && (
                 <div>
                   <Shield className="w-4 h-4 inline mr-2" />
@@ -187,8 +181,8 @@ export default function StaffPortalPage() {
 
         {/* Volver al inicio */}
         <div className="mt-8 text-center">
-          <Link 
-            href="/" 
+          <Link
+            href="/"
             className="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />

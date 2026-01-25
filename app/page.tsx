@@ -14,6 +14,9 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { Users, ArrowLeft, Building2 } from "lucide-react"
 
+import { IoIosPin } from "react-icons/io";
+import { FaClock, FaMobile } from "react-icons/fa"
+import { IoLogoWhatsapp } from "react-icons/io5"
 const Home = () => {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   const [inscriptionData, setInscriptionData] = useState<FormData | null>(null)
@@ -67,7 +70,7 @@ const Home = () => {
       {/* Fondo */}
       <img src={"/images/ebdv-bg.jpg"} alt="Imagen" className="bg-cover w-full h-full overflow-hidden -z-10 absolute" />
       <div className="fixed inset-0 bg-primary/10 backdrop-blur-xl"></div>
-      
+
       <div className="relative z-10 py-8 px-4">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
@@ -79,11 +82,9 @@ const Home = () => {
               <span className="text-blue-500 drop-shadow-[2px_2px_4px_rgba(0,0,0,0.5)]">V</span>
               <span className="text-primary drop-shadow-[2px_2px_4px_rgba(0,0,0,0.5)]">2026</span>
             </h1>
-            <p className="text-lg text-primary-foreground drop-shadow-lg mb-2">
-              Escuela Bíblica Dominical
-            </p>
+
             <p className="text-sm text-muted-foreground drop-shadow">
-              Domingos 3:00 PM • {new Date().toLocaleDateString('es-PE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              {new Date().toLocaleDateString('es-PE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </p>
           </header>
 
@@ -96,14 +97,14 @@ const Home = () => {
                   <Users className="w-10 h-10 text-white" />
                 </div>
                 <h2 className="text-3xl font-bold mb-4 text-foreground">
-                  Para Padres
+                  Inscripción
                 </h2>
                 <p className="text-muted-foreground mb-6 text-lg">
-                  Inscribe a tus hijos en la EBDV 2026
+                  Formulario de Inscripción - EBDV 2026
                 </p>
                 <Link href="/inscribir">
-                  <Button size="lg" className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-3 text-lg">
-                    Inscribir Alumno
+                  <Button size="lg" className="w-full bg-green-500 hover:bg-green-600 text-white  cursor-pointer font-medium py-3 text-lg">
+                    Inscribir Niño(a)
                   </Button>
                 </Link>
               </CardContent>
@@ -112,17 +113,18 @@ const Home = () => {
             {/* Card para Staff */}
             <Card className="bg-card border-2 border-purple-200 shadow-lg hover:shadow-xl transition-all duration-200">
               <CardContent className="p-8 text-center">
-                <div className="w-20 h-20 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-md">
+                <div className="w-20 h-20 bg-accent rounded-full flex items-center justify-center mx-auto mb-6 shadow-md">
+
                   <Building2 className="w-10 h-10 text-white" />
                 </div>
                 <h2 className="text-3xl font-bold mb-4 text-foreground">
-                  Para Staff
+                  Staff
                 </h2>
                 <p className="text-muted-foreground mb-6 text-lg">
                   Acceso al sistema de evaluación
                 </p>
                 <Link href="/staff">
-                  <Button size="lg" className="w-full bg-secondary hover:bg-secondary text-secondary-foreground font-medium py-3 text-lg">
+                  <Button size="lg" className="w-full bg-accent hover:bg-accent/90  cursor-pointer text-secondary-foreground font-medium py-3 text-lg">
                     Portal Staff
                   </Button>
                 </Link>
@@ -133,20 +135,35 @@ const Home = () => {
           {/* Info Rápida */}
           <Card className="bg-card shadow-md border-border">
             <CardContent className="p-6 text-center">
-              <div className="grid md:grid-cols-3 gap-4 text-sm text-muted-foreground">
-                <div>
-                  <span className="font-semibold text-foreground">📍 Ubicación:</span> [Tu Iglesia]
+              <div className="flex flex-col md:flex-row justify-between items-center gap-4  text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <IoIosPin className="text-red-500" />
+                  <span className="font-semibold text-foreground">
+                    Ubicación:</span>
+                  <span>Av. Leandra Torres 263</span>
                 </div>
-                <div>
-                  <span className="font-semibold text-foreground">⏰ Hora:</span> 3:00 PM
+
+                <div className="flex items-center gap-2">
+
+                  <FaClock className="text-red-500" />
+                  <span className="font-semibold text-foreground">
+                    Hora:
+                  </span>
+                  <span>3:00 PM</span>
                 </div>
-                <div>
-                  <span className="font-semibold text-foreground">📞 Contacto:</span> [Tu Teléfono]
-                </div>
+
+                <div className="flex items-center gap-2">
+
+                  <IoLogoWhatsapp className="text-green-500" />
+                  <span className="font-semibold text-foreground"> Contacto:</span>
+                  <span>
+                    964 001 530
+
+                  </span>                </div>
               </div>
               <div className="mt-4 pt-4 border-t border-border">
                 <p className="text-xs text-muted-foreground">
-                  © 2026 Escuela Bíblica Dominical • Todos los derechos reservados
+                  © 2026 PIB - HYO • Todos los derechos reservados
                 </p>
               </div>
             </CardContent>

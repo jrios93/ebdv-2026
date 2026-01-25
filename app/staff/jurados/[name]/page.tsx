@@ -13,13 +13,15 @@ import {
   getPuntuacionGrupalHoy,
   getClassroomIdByName 
 } from "@/lib/supabaseQueries"
+import { PreguntasSelector } from "@/components/ui/preguntas-selector"
+import { ScoreSelector } from "@/components/ui/score-selector"
 
 interface GrupalEvaluationForm {
   puntualidad: 0 | 5 | 10
   animo_y_barras: 0 | 10 | 20
   orden: 0 | 10 | 20
   verso_memoria: 0 | 10 | 20
-  preguntas_correctas: 0 | 10 | 20 | 30
+  preguntas_correctas: 0 | 5 | 10 | 15 | 20 | 25 | 30
 }
 
 export default function JuradosClassroomPage({ params }: { params: Promise<{ name: string }> }) {
@@ -29,29 +31,18 @@ export default function JuradosClassroomPage({ params }: { params: Promise<{ nam
   useEffect(() => {
     const unwrapParams = async () => {
       const resolvedParams = await params
-      setClassroomName(resolvedParams.name)
-    }
-    unwrapParams()
-  }, [params])
-  const router = useRouter()
-  const [isSaving, setIsSaving] = useState(false)
-  const [evaluation, setEvaluation] = useState<GrupalEvaluationForm>({
-    puntualidad: 5,
-    animo_y_barras: 10,
-    orden: 10,
-    verso_memoria: 10,
-    preguntas_correctas: 10
-  })
-
-  const classroomInfo = classroomName ? getClassroomInfo(classroomName) : null
-
-  useEffect(() => {
-    const loadPuntuacionExistente = async () => {
+      const className = resolvedParams.name
+      setClassroomName(className)
+      
+      // Cargar puntuación existente
       try {
-        const classroomId = await getClassroomIdByName(classroomName)
-        if (!classroomId) return
-
         const today = new Date().toISOString().split('T')[0]
+        const classroomId = await getClassroomIdByName(classroomName)
+        if (!classroomId) {
+          console.error('Classroom ID no encontrado para:', className)
+          return
+        }
+        
         const puntuacionExistente = await getPuntuacionGrupalHoy(classroomId, today)
         
         if (puntuacionExistente) {
@@ -60,29 +51,44 @@ export default function JuradosClassroomPage({ params }: { params: Promise<{ nam
             animo_y_barras: puntuacionExistente.animo_y_barras as 0 | 10 | 20,
             orden: puntuacionExistente.orden as 0 | 10 | 20,
             verso_memoria: puntuacionExistente.verso_memoria as 0 | 10 | 20,
-            preguntas_correctas: puntuacionExistente.preguntas_correctas as 0 | 10 | 20 | 30
+            preguntas_correctas: puntuacionExistente.preguntas_correctas as 0 | 5 | 10 | 15 | 20 | 25 | 30
           })
         }
       } catch (error) {
         console.error('Error loading puntuacion existente:', error)
+      } finally {
+        setLoading(false)
       }
     }
+    unwrapParams()
+  }, [params])
+  const router = useRouter()
+  const [isSaving, setIsSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [evaluation, setEvaluation] = useState<GrupalEvaluationForm>({
+    puntualidad: 0,
+    animo_y_barras: 0,
+    orden: 0,
+    verso_memoria: 0,
+    preguntas_correctas: 0
+  })
 
-    loadPuntuacionExistente()
-  }, [classroomName])
+  const classroomInfo = classroomName ? getClassroomInfo(classroomName) : null
+
+  // Eliminado el useEffect duplicado - ahora la carga se hace en el useEffect principal
 
   const calculateTotal = () => {
-    return evaluation.puntualidad + 
-           evaluation.animo_y_barras + 
-           evaluation.orden + 
-           evaluation.verso_memoria + 
-           evaluation.preguntas_correctas
+    return evaluation.puntualidad +
+      evaluation.animo_y_barras +
+      evaluation.orden +
+      evaluation.verso_memoria +
+      evaluation.preguntas_correctas
   }
 
   const getGrade = (score: number) => {
     const maxScore = 90 // Maximum possible score
     const percentage = (score / maxScore) * 100
-    
+
     if (percentage >= 90) return { grade: "Excelente", color: "bg-green-100 text-green-700 border-green-300" }
     if (percentage >= 75) return { grade: "Muy Bueno", color: "bg-blue-100 text-blue-700 border-blue-300" }
     if (percentage >= 60) return { grade: "Bueno", color: "bg-yellow-100 text-yellow-700 border-yellow-300" }
@@ -91,12 +97,12 @@ export default function JuradosClassroomPage({ params }: { params: Promise<{ nam
 
   const handleSave = async () => {
     setIsSaving(true)
-    
+
     try {
       // Obtener classroom_id y jurado_id
       const classroomId = await getClassroomIdByName(classroomName)
       // Omitir jurado_registro_id por ahora (se agregará autenticación después)
-      
+
       if (!classroomId) {
         throw new Error('Classroom no encontrado')
       }
@@ -113,7 +119,7 @@ export default function JuradosClassroomPage({ params }: { params: Promise<{ nam
       }
 
       const success = await savePuntuacionGrupal(puntuacionData)
-      
+
       if (success) {
         router.push("/staff/jurados")
       } else {
@@ -127,12 +133,12 @@ export default function JuradosClassroomPage({ params }: { params: Promise<{ nam
     }
   }
 
-  const TabSelector = ({ 
-    label, 
-    field, 
+  const TabSelector = ({
+    label,
+    field,
     options,
     description
-  }: { 
+  }: {
     label: string
     field: keyof GrupalEvaluationForm
     options: { value: number; label: string }[]
@@ -173,7 +179,7 @@ export default function JuradosClassroomPage({ params }: { params: Promise<{ nam
               <ArrowLeft className="w-4 h-4 mr-2" />
               Volver a salones
             </Link>
-            
+
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-bold text-foreground">
@@ -181,14 +187,14 @@ export default function JuradosClassroomPage({ params }: { params: Promise<{ nam
                 </h1>
                 <div className="flex items-center gap-4 mt-2">
                   <div className={`w-12 h-12 ${classroomInfo?.bgColor} ${classroomInfo?.borderColor} border-2 rounded-full flex items-center justify-center`}>
-                    {classroomInfo?.icon && <classroomInfo.icon className="w-6 h-6 text-white" />}
+                    {classroomInfo?.icon && <classroomInfo.icon className={`w-6 h-6 ${classroomInfo.textColor} `} />}
                   </div>
                   <Badge className={classroomInfo?.borderColor}>
                     {classroomInfo?.name || classroomName}
                   </Badge>
                 </div>
               </div>
-              
+
               <div className="text-right">
                 <div className="text-sm text-muted-foreground">Puntuación Total</div>
                 <div className="text-3xl font-bold text-foreground">{totalScore}/{maxScore}</div>
@@ -212,60 +218,62 @@ export default function JuradosClassroomPage({ params }: { params: Promise<{ nam
               </p>
             </CardHeader>
             <CardContent className="space-y-8">
-              <TabSelector
+              <ScoreSelector
+                value={evaluation.puntualidad}
+                onChange={(value) => setEvaluation(prev => ({ ...prev, puntualidad: value as 0 | 5 | 10 }))}
+                disabled={isSaving}
                 label="Puntualidad"
-                field="puntualidad"
-                options={[
-                  { value: 0, label: "Tarde (0)" },
-                  { value: 5, label: "Parcial (5)" },
-                  { value: 10, label: "A tiempo (10)" }
-                ]}
                 description="Puntualidad del salón al inicio de la actividad"
+                options={[
+                  { value: 0, label: "Tarde (0 pts)" },
+                  { value: 5, label: "Parcial (5 pts)" },
+                  { value: 10, label: "A tiempo (10 pts)" }
+                ]}
               />
-              
-              <TabSelector
+
+              <ScoreSelector
+                value={evaluation.animo_y_barras}
+                onChange={(value) => setEvaluation(prev => ({ ...prev, animo_y_barras: value as 0 | 10 | 20 }))}
+                disabled={isSaving}
                 label="Ánimo y Barras"
-                field="animo_y_barras"
+                description="Participación y entusiasmo del salón"
                 options={[
-                  { value: 0, label: "Bajo (0)" },
-                  { value: 10, label: "Regular (10)" },
-                  { value: 20, label: "Excelente (20)" }
+                  { value: 0, label: "Bajo (0 pts)" },
+                  { value: 10, label: "Regular (10 pts)" },
+                  { value: 20, label: "Excelente (20 pts)" }
                 ]}
-                description="Participación y energía del grupo durante las canciones"
               />
-              
-              <TabSelector
-                label="Orden y Disciplina"
-                field="orden"
+
+              <ScoreSelector
+                value={evaluation.orden}
+                onChange={(value) => setEvaluation(prev => ({ ...prev, orden: value as 0 | 10 | 20 }))}
+                disabled={isSaving}
+                label="Orden"
+                description="Comportamiento y disciplina durante la actividad"
                 options={[
-                  { value: 0, label: "Desordenado (0)" },
-                  { value: 10, label: "Regular (10)" },
-                  { value: 20, label: "Ordenado (20)" }
+                  { value: 0, label: "Desordenado (0 pts)" },
+                  { value: 10, label: "Parcial (10 pts)" },
+                  { value: 20, label: "Ordenado (20 pts)" }
                 ]}
-                description="Comportamiento y organización del grupo"
               />
-              
-              <TabSelector
-                label="Verso de Memoria Grupal"
-                field="verso_memoria"
+
+              <ScoreSelector
+                value={evaluation.verso_memoria}
+                onChange={(value) => setEvaluation(prev => ({ ...prev, verso_memoria: value as 0 | 10 | 20 }))}
+                disabled={isSaving}
+                label="Verso de Memoria"
+                description="Memorización y recitación del verso bíblico"
                 options={[
-                  { value: 0, label: "No recitan (0)" },
-                  { value: 10, label: "Parcial (10)" },
-                  { value: 20, label: "Bueno (20)" }
+                  { value: 0, label: "No recitó (0 pts)" },
+                  { value: 10, label: "Parcial (10 pts)" },
+                  { value: 20, label: "Completo (20 pts)" }
                 ]}
-                description="Recitación del verso bíblico en grupo"
               />
-              
-              <TabSelector
-                label="Niños con Respuesta Correcta"
-                field="preguntas_correctas"
-                options={[
-                  { value: 0, label: "Ninguno (0 pts)" },
-                  { value: 10, label: "1 niño (10 pts)" },
-                  { value: 20, label: "2 niños (20 pts)" },
-                  { value: 30, label: "3 niños (30 pts)" }
-                ]}
-                description="Cada niño con respuesta correcta suma 10 puntos (máximo 3 niños)"
+
+              <PreguntasSelector
+                value={evaluation.preguntas_correctas}
+                onChange={(value) => setEvaluation(prev => ({ ...prev, preguntas_correctas: value as 0 | 5 | 10 | 15 | 20 | 25 | 30 }))}
+                disabled={isSaving}
               />
             </CardContent>
           </Card>
@@ -311,8 +319,8 @@ export default function JuradosClassroomPage({ params }: { params: Promise<{ nam
                 Cancelar
               </Button>
             </Link>
-            
-            <Button 
+
+            <Button
               onClick={handleSave}
               disabled={isSaving}
               className="bg-primary hover:bg-primary text-primary-foreground"

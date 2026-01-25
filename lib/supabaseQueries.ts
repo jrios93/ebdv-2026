@@ -583,7 +583,7 @@ export async function getAllSalonesEvaluadosToday(): Promise<Array<{
       }
     })
   } catch (error) {
-    console.error('Error getting salones evaluados:', error)
+    console.error('Error getting all salones evaluados:', error)
     return null
   }
 }
@@ -707,7 +707,7 @@ export async function getClassroomIdByName(nombre: string): Promise<string | nul
     
     return id || null
   } catch (error) {
-    console.error('Error en getClassroomIdByName:', error)
+    console.error('Error getting classroom ID by name:', error)
     return null
   }
 }
@@ -745,11 +745,14 @@ export async function getStatsGenerales(): Promise<{
       .select('alumno_id')
       .eq('fecha', today)
 
+    const evaluadosHoy = evaluadosUnicos ? 
+      new Set(evaluadosUnicos.map(e => e.alumno_id)).size : 0
+
     return {
       totalAlumnos: totalAlumnos || 0,
       totalEvaluacionesHoy: totalEvaluacionesHoy || 0,
       totalPuntuacionesGrupalHoy: totalPuntuacionesGrupalHoy || 0,
-      evaluadosHoy: new Set(evaluadosUnicos?.map(e => e.alumno_id) || []).size
+      evaluadosHoy
     }
   } catch (error) {
     console.error('Error fetching stats:', error)
@@ -765,27 +768,62 @@ export async function getStatsGenerales(): Promise<{
 export async function getAlumnosPorSalon(): Promise<Array<{
   salon: string
   cantidad: number
+  asistidos: number
 }> | null> {
   try {
-    const { data, error } = await supabase
+    const today = new Date().toISOString().split('T')[0]
+    
+    // Obtener todos los alumnos activos
+    const { data: alumnos, error: errorAlumnos } = await supabase
       .from('alumnos')
       .select(`
+        id,
         classrooms!classroom_id(nombre)
       `)
       .eq('activo', true)
     
-    if (error) throw error
+    if (errorAlumnos) throw errorAlumnos
     
-    // Contar alumnos por salón
-    const conteo = data?.reduce((acc: Record<string, number>, alumno: any) => {
+    // Obtener evaluaciones de hoy para ver quiénes asistieron
+    const { data: evaluacionesHoy, error: evaluacionesError } = await supabase
+      .from('puntuacion_individual_diaria')
+      .select(`
+        alumno_id,
+        puntualidad_asistencia
+      `)
+      .eq('fecha', today)
+      .gte('puntualidad_asistencia', 1) // Solo los que tienen puntualidad > 0
+    
+    if (evaluacionesError) throw evaluacionesError
+    
+    // Crear set de IDs de alumnos que asistieron hoy
+    const asistenciasSet = new Set(evaluacionesHoy?.map(e => e.alumno_id) || [])
+    
+    // Agrupar por salón y contar tanto inscritos como asistidos
+    const conteo = alumnos?.reduce((acc: Record<string, { inscritos: number, asistidos: number }>, alumno: any) => {
       const salon = alumno.classrooms?.nombre || 'Sin asignar'
-      acc[salon] = (acc[salon] || 0) + 1
+      
+      if (!acc[salon]) {
+        acc[salon] = { inscritos: 0, asistidos: 0 }
+      }
+      
+      acc[salon].inscritos += 1
+      
+      // Si este alumno asistió hoy
+      if (asistenciasSet.has(alumno.id)) {
+        acc[salon].asistidos += 1
+      }
+      
       return acc
     }, {})
     
     // Convertir a array y ordenar
     return Object.entries(conteo || {})
-      .map(([salon, cantidad]) => ({ salon, cantidad }))
+      .map(([salon, datos]) => ({ 
+        salon, 
+        cantidad: (datos as any).inscritos, 
+        asistidos: (datos as any).asistidos 
+      }))
       .sort((a, b) => b.cantidad - a.cantidad)
   } catch (error) {
     console.error('Error getting alumnos por salon:', error)
@@ -910,7 +948,7 @@ export async function getResumenSemanal(): Promise<{
     }, {})
     
     const rankingSalones = Object.entries(scoresSalones || {})
-      .map(([salon, totalPuntos]) => ({ salon, totalPuntos }))
+      .map(([salon, totalPuntos]) => ({ salon, totalPuntos: Number(totalPuntos) }))
       .sort((a, b) => b.totalPuntos - a.totalPuntos)
       .map((item, index) => ({
         ...item,

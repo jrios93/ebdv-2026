@@ -37,7 +37,7 @@ export default function AdminPage() {
   const [topAlumnos, setTopAlumnos] = useState<any[]>([])
   const [classroomRanking, setClassroomRanking] = useState<any[]>([])
   const [topInvitados, setTopInvitados] = useState<any[]>([])
-  const [alumnosPorSalon, setAlumnosPorSalon] = useState<Array<{salon: string, cantidad: number}>>([])
+  const [alumnosPorSalon, setAlumnosPorSalon] = useState<Array<{salon: string, cantidad: number, asistidos: number}>>([])
   const [resumenSemanal, setResumenSemanal] = useState<{
     rankingAlumnos: Array<{
       alumno: any
@@ -145,40 +145,7 @@ export default function AdminPage() {
     window.location.href = "/"
   }
 
-  const statsCards = [
-    {
-      title: "Puntualidad Promedio",
-      value: stats.puntualidadAsistencia.toFixed(1),
-      description: "De 0 a 10 puntos",
-      icon: Clock,
-      color: "bg-green-500",
-      trend: ""
-    },
-    {
-      title: "Evaluaciones Hoy",
-      value: stats.evaluacionesHoy.toString(),
-      description: `De ${stats.totalHoy} alumnos`,
-      icon: Award,
-      color: "bg-yellow-500",
-      trend: ""
-    },
-    {
-      title: "Mejor Salón Hoy",
-      value: stats.mejorClassroom || "-",
-      description: "Según puntuación del día",
-      icon: TrendingUp,
-      color: "bg-purple-500",
-      trend: ""
-    },
-    {
-      title: "Días del Evento",
-      value: "6",
-      description: "Lunes a Sábado",
-      icon: Calendar,
-      color: "bg-orange-500",
-      trend: ""
-    }
-  ]
+
 
   const classrooms = [
     { name: "vida", title: "Vida", icon: Heart, color: "bg-green-100 text-green-700 border-green-300" },
@@ -186,6 +153,10 @@ export default function AdminPage() {
     { name: "gracia", title: "Gracia", icon: Heart, color: "bg-red-100 text-red-700 border-red-300" },
     { name: "verdad", title: "Verdad", icon: Trophy, color: "bg-blue-100 text-blue-700 border-blue-300" }
   ]
+
+  // Calcular totales para decisiones operativas
+  const totalAsistidosHoy = alumnosPorSalon.reduce((sum, salon) => sum + salon.asistidos, 0)
+  const porcentajeAsistencia = stats.totalAlumnos > 0 ? Math.round((totalAsistidosHoy / stats.totalAlumnos) * 100) : 0
 
   return (
     <StaffGuard role="admin">
@@ -217,7 +188,7 @@ export default function AdminPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Users className="w-6 h-6 text-blue-600" />
-                Distribución Total de Alumnos
+                Inscritos vs Asistencias por Salón
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -234,19 +205,35 @@ export default function AdminPage() {
                       return (
                         <div key={salon.salon} className={`p-6 rounded-lg border-2 ${color} text-center shadow-sm hover:shadow-md transition-shadow`}>
                           <IconComponent className="w-10 h-10 mx-auto mb-3" />
-                          <div className="text-3xl font-bold mb-1">{salon.cantidad}</div>
+                          <div className="text-3xl font-bold mb-1 text-red-600">{salon.asistidos}</div>
                           <div className="text-sm capitalize font-medium">{salon.salon}</div>
-                          <div className="text-xs mt-1 opacity-75">niños</div>
+                          <div className="text-xs opacity-75 mb-2">ASISTIDOS HOY</div>
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
+                              📋 {salon.cantidad} inscritos
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              ({salon.cantidad > 0 ? Math.round((salon.asistidos / salon.cantidad) * 100) : 0}%)
+                            </div>
+                          </div>
                         </div>
                       )
                     })}
-                    <div className="p-6 rounded-lg border-2 border-dashed border-blue-300 text-center bg-white/70 shadow-sm">
+                    <div className="p-6 rounded-lg border-2 border-dashed border-red-300 text-center bg-white/70 shadow-sm">
                       <div className="w-10 h-10 mx-auto mb-3 flex items-center justify-center">
-                        <Users className="w-8 h-8 text-blue-600" />
+                        <Users className="w-8 h-8 text-red-600" />
                       </div>
-                      <div className="text-3xl font-bold text-blue-700 mb-1">{stats.totalAlumnos}</div>
-                      <div className="text-sm font-medium text-blue-600">Total General</div>
-                      <div className="text-xs mt-1 text-blue-500">todos los salones</div>
+                      <div className="text-3xl font-bold text-red-700 mb-1">{totalAsistidosHoy}</div>
+                      <div className="text-sm font-medium text-red-600">TOTAL ASISTIDOS</div>
+                      <div className="text-xs text-gray-500 mb-2">Para decisiones operativas</div>
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
+                          📋 {stats.totalAlumnos} inscritos
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          ({porcentajeAsistencia}%)
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <div className="text-center text-sm text-muted-foreground bg-white/50 rounded-lg p-3">
@@ -432,30 +419,11 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* 3. ESTADÍSTICAS DEL DÍA (Contexto Inmediato) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {statsCards.map((stat, index) => {
-              const IconComponent = stat.icon
-              return (
-                <Card key={index} className="border-border hover:shadow-md transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      {stat.title}
-                    </CardTitle>
-                    <div className={`w-8 h-8 ${stat.color} rounded-full flex items-center justify-center shadow-sm`}>
-                      <IconComponent className="w-4 h-4 text-white" />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-foreground">{stat.value}</div>
-                    <p className="text-xs text-muted-foreground">{stat.description}</p>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
 
-          {/* 4. ACCIONES RÁPIDAS Y EXPORTACIÓN */}
+
+
+
+          {/* 3. ACCIONES RÁPIDAS Y EXPORTACIÓN */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* Quick Actions */}
             <Card className="border-border">

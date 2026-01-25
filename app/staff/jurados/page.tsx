@@ -2,48 +2,36 @@
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Users, Trophy, Star, Heart, LogOut, Clock, Scale } from "lucide-react"
+import { LogOut, Clock, Scale } from "lucide-react"
 import { StaffGuard } from "@/components/StaffGuard"
+import { getClassroomInfo } from "@/lib/classroom"
 
 const classrooms = [
   {
     name: "vida",
     title: "Vida",
     description: "Aulas de nivel inicial",
-    icon: Heart,
-    color: "bg-red-500",
-    hoverColor: "hover:bg-red-600",
     ageRange: "3-5 años"
   },
   {
-    name: "luz", 
+    name: "luz",
     title: "Luz",
     description: "Aulas de nivel primario bajo",
-    icon: Star,
-    color: "bg-yellow-500",
-    hoverColor: "hover:bg-yellow-600",
-    ageRange: "6-8 años"
+    ageRange: "6-9 años"
   },
   {
     name: "gracia",
-    title: "Gracia", 
+    title: "Gracia",
     description: "Aulas de nivel primario medio",
-    icon: Users,
-    color: "bg-green-500",
-    hoverColor: "hover:bg-green-600",
-    ageRange: "9-11 años"
+    ageRange: "10-12 años"
   },
   {
     name: "verdad",
     title: "Verdad",
     description: "Aulas de nivel primario alto",
-    icon: Trophy,
-    color: "bg-blue-500", 
-    hoverColor: "hover:bg-blue-600",
-    ageRange: "12-15 años"
+    ageRange: "13-15 años"
   }
 ]
-
 export default function JuradosPage() {
   const handleLogout = () => {
     localStorage.removeItem("staffAuth")
@@ -63,7 +51,7 @@ export default function JuradosPage() {
               <span className="text-green-500">B</span>
               <span className="text-orange-500">D</span>
               <span className="text-blue-500">V</span>
-              <span className="text-purple-500">2026</span>
+              <span className="text-accent">2026</span>
             </h1>
             <div className="flex items-center justify-center gap-4 text-sm text-gray-600 mb-2">
               <Scale className="w-4 h-4" />
@@ -78,17 +66,21 @@ export default function JuradosPage() {
           </div>
 
           {/* Classroom Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2  gap-6 mb-8">
             {classrooms.map((classroom) => {
-              const IconComponent = classroom.icon
+              const classroomInfo = getClassroomInfo(classroom.name)
+              const IconComponent = classroomInfo.icon
               return (
                 <Link key={classroom.name} href={`/staff/jurados/${classroom.name}`}>
-                  <Card className={`cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-xl border-2 border-gray-200 ${classroom.hoverColor}`}>
+                  <Card className={`cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-xl border-2 ${classroomInfo.borderColor} ${classroomInfo.bgColor} hover:opacity-90`}>
                     <CardHeader className="text-center pb-3">
-                      <div className={`w-16 h-16 ${classroom.color} rounded-full flex items-center justify-center mx-auto mb-3`}>
-                        <IconComponent className="w-8 h-8 text-white" />
+
+                      <div className={`w-16 h-16 bg-linear-to-br ${classroomInfo.textColor.replace('text', 'from')} ${classroomInfo.textColor.replace('text', 'to')} rounded-full flex items-center justify-center mx-auto mb-3`}>
+
+                        <IconComponent className={`w-8 h-8 ${classroomInfo.textColor} `} />
                       </div>
-                      <CardTitle className="text-2xl font-bold capitalize text-gray-800">
+
+                      <CardTitle className={`text-2xl font-bold ${classroomInfo.textColor}`}>
                         {classroom.title}
                       </CardTitle>
                     </CardHeader>
@@ -107,10 +99,10 @@ export default function JuradosPage() {
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
+            <Button
               onClick={handleLogout}
               variant="outline"
-              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="border-destructive text-gray-700 hover:bg-destructive cursor-pointer"
             >
               <LogOut className="w-4 h-4 mr-2" />
               Cerrar Sesión

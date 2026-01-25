@@ -9,11 +9,11 @@ import { Badge } from "@/components/ui/badge"
 import { StaffGuard } from "@/components/StaffGuard"
 import { Search, ArrowLeft, Users, Star, Award } from "lucide-react"
 import { getClassroomInfo } from "@/lib/classroom"
-import { 
-  getAlumnosByClassroom, 
-  getClassroomIdByName, 
+import {
+  getAlumnosByClassroom,
+  getClassroomIdByName,
   getPuntuacionIndividualHoy,
-  type Alumno 
+  type Alumno
 } from "@/lib/supabaseQueries"
 import { getAlumnosByClassroomId } from "@/lib/testAlumnos"
 
@@ -42,7 +42,7 @@ export default function MaestrosClassroomPage({ params }: { params: Promise<{ na
 
   useEffect(() => {
     if (!classroomName) return
-    
+
     const loadAlumnos = async () => {
       try {
         const classroomId = await getClassroomIdByName(classroomName)
@@ -61,15 +61,15 @@ export default function MaestrosClassroomPage({ params }: { params: Promise<{ na
         const alumnosConEstado = await Promise.all(
           alumnosData.map(async (alumno) => {
             const puntuacion = await getPuntuacionIndividualHoy(alumno.id, today)
-            
+
             // Calcular puntos totales si fue evaluado
-            const puntosHoy = puntuacion 
-              ? puntuacion.actitud + 
-                puntuacion.puntualidad_asistencia + 
-                puntuacion.animo + 
-                puntuacion.trabajo_manual + 
-                puntuacion.verso_memoria + 
-                puntuacion.aprestamiento_biblico
+            const puntosHoy = puntuacion
+              ? puntuacion.actitud +
+              puntuacion.puntualidad_asistencia +
+              puntuacion.animo +
+              puntuacion.trabajo_manual +
+              puntuacion.verso_memoria +
+              puntuacion.aprestamiento_biblico
               : 0
 
             return {
@@ -122,11 +122,11 @@ export default function MaestrosClassroomPage({ params }: { params: Promise<{ na
               <ArrowLeft className="w-4 h-4 mr-2" />
               Volver a salones
             </Link>
-            
+
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className={`w-16 h-16 ${classroomInfo?.bgColor} ${classroomInfo?.borderColor} border-2 rounded-full flex items-center justify-center`}>
-                  {classroomInfo?.icon && <classroomInfo.icon className="w-8 h-8 text-white" />}
+                  {classroomInfo?.icon && <classroomInfo.icon className={`w-8 h-8 ${classroomInfo.textColor}`} />}
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold text-foreground">
@@ -137,7 +137,7 @@ export default function MaestrosClassroomPage({ params }: { params: Promise<{ na
                   </p>
                 </div>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row gap-2">
                 <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
                   <Award className="w-3 h-3 mr-1" />
@@ -159,7 +159,7 @@ export default function MaestrosClassroomPage({ params }: { params: Promise<{ na
                 placeholder="Buscar alumno por nombre o apellido..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 border-border"
+                className="pl-10 border-border  py-6"
               />
             </div>
           </div>
@@ -202,9 +202,9 @@ export default function MaestrosClassroomPage({ params }: { params: Promise<{ na
                       )}
                     </div>
                   </div>
-                  
+
                   <Link href={`/staff/maestros/${classroomName}/${alumno.id}/evaluar`}>
-                    <Button className={`w-full ${alumno.evaluado ? 'bg-secondary hover:bg-secondary' : 'bg-primary hover:bg-primary'} text-primary-foreground`}>
+                    <Button className={`w-full cursor-pointer ${alumno.evaluado ? 'bg-secondary hover:bg-secondary' : 'bg-primary hover:bg-primary'} text-primary-foreground`}>
                       {alumno.evaluado ? "Ver Evaluación" : "Evaluar Alumno"}
                     </Button>
                   </Link>

@@ -14,22 +14,22 @@ const classrooms = [
     ageRange: "3-5 años"
   },
   {
-    name: "luz", 
+    name: "luz",
     title: "Luz",
     description: "Aulas de nivel primario bajo",
-    ageRange: "6-8 años"
+    ageRange: "6-9 años"
   },
   {
     name: "gracia",
-    title: "Gracia", 
+    title: "Gracia",
     description: "Aulas de nivel primario medio",
-    ageRange: "9-11 años"
+    ageRange: "10-12 años"
   },
   {
     name: "verdad",
     title: "Verdad",
     description: "Aulas de nivel primario alto",
-    ageRange: "12-15 años"
+    ageRange: "13-15 años"
   }
 ]
 
@@ -52,7 +52,7 @@ export default function MaestrosPage() {
               <span className="text-green-500">B</span>
               <span className="text-orange-500">D</span>
               <span className="text-blue-500">V</span>
-              <span className="text-purple-500">2026</span>
+              <span className="text-accent">2026</span>
             </h1>
             <div className="flex items-center justify-center gap-4 text-sm text-gray-600 mb-2">
               <GraduationCap className="w-4 h-4" />
@@ -67,16 +67,16 @@ export default function MaestrosPage() {
           </div>
 
           {/* Classroom Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2  gap-6 mb-8">
             {classrooms.map((classroom) => {
               const classroomInfo = getClassroomInfo(classroom.name)
               const IconComponent = classroomInfo.icon
               return (
                 <Link key={classroom.name} href={`/staff/maestros/${classroom.name}`}>
-                  <Card className={`cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-xl border-2 ${classroomInfo.borderColor} ${classroomInfo.bgColor} hover:opacity-90`}>
+                  <Card className={`cursor-pointer  transition-all duration-200 transform hover:scale-105 hover:shadow-xl border-2 ${classroomInfo.borderColor} ${classroomInfo.bgColor} hover:opacity-90`}>
                     <CardHeader className="text-center pb-3">
-                      <div className={`w-16 h-16 bg-gradient-to-br ${classroomInfo.textColor.replace('text', 'from')} ${classroomInfo.textColor.replace('text', 'to')} rounded-full flex items-center justify-center mx-auto mb-3`}>
-                        <IconComponent className="w-8 h-8 text-white" />
+                      <div className={`w-16 h-16 bg-linear-to-br ${classroomInfo.textColor.replace('text', 'from')} ${classroomInfo.textColor.replace('text', 'to')} rounded-full flex items-center justify-center mx-auto mb-3`}>
+                        <IconComponent className={`w-8 h-8 ${classroomInfo.textColor} `} />
                       </div>
                       <CardTitle className={`text-2xl font-bold ${classroomInfo.textColor}`}>
                         {classroom.title}
@@ -97,10 +97,10 @@ export default function MaestrosPage() {
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
+            <Button
               onClick={handleLogout}
               variant="outline"
-              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="border-destructive text-gray-700 hover:bg-destructive cursor-pointer"
             >
               <LogOut className="w-4 h-4 mr-2" />
               Cerrar Sesión

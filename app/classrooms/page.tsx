@@ -13,31 +13,31 @@ const classrooms = [
     ageRange: "3-5 años"
   },
   {
-    name: "luz", 
+    name: "luz",
     title: "Luz",
     description: "Aulas de nivel primario bajo",
     icon: Star,
     color: "bg-yellow-500",
     hoverColor: "hover:bg-yellow-600",
-    ageRange: "6-8 años"
+    ageRange: "6-9 años"
   },
   {
     name: "gracia",
-    title: "Gracia", 
+    title: "Gracia",
     description: "Aulas de nivel primario medio",
     icon: Users,
     color: "bg-green-500",
     hoverColor: "hover:bg-green-600",
-    ageRange: "9-11 años"
+    ageRange: "10-12 años"
   },
   {
     name: "verdad",
     title: "Verdad",
     description: "Aulas de nivel primario alto",
     icon: Trophy,
-    color: "bg-blue-500", 
+    color: "bg-blue-500",
     hoverColor: "hover:bg-blue-600",
-    ageRange: "12-15 años"
+    ageRange: "13-15 años"
   }
 ]
 

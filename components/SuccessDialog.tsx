@@ -45,7 +45,7 @@ export const SuccessDialog = ({ open, onOpenChange, inscriptionData }: SuccessDi
                 <span className="bg-green-500 text-transparent bg-clip-text">B</span>
                 <span className="bg-orange-500 text-transparent bg-clip-text">D</span>
                 <span className="bg-blue-500 text-transparent bg-clip-text">V</span>
-                <span className="bg-red-500 text-transparent  bg-clip-text text-lg sm:text-3xl"> 2026</span>
+                <span className="bg-accent text-transparent  bg-clip-text text-lg sm:text-3xl"> 2026</span>
               </>
             ), [])}
           </div>
@@ -77,7 +77,7 @@ export const SuccessDialog = ({ open, onOpenChange, inscriptionData }: SuccessDi
             <p className="text-sm font-bold text-orange-800 mb-2">🏆 ¡Nos vemos en la EBDV!</p>
             <p className="text-xs font-medium text-orange-700">
               📍 Primera Iglesia Bautista<br />
-              📅 Av. Leandra Torres 263<br />
+              📅 Av. Leandra Torres 263<br />
               ⏰ 26-31 ene • 3-5:30pm
             </p>
           </div>
