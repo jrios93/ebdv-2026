@@ -220,17 +220,6 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <ScoreSelector
-                  label="Actitud"
-                  description="Comportamiento y colaboración durante las actividades"
-                  value={evaluation.actitud}
-                  onChange={(value) => setEvaluation(prev => ({ ...prev, actitud: value as 0 | 5 | 10 }))}
-                  options={[
-                    { value: 0, label: "No cumple (0)" },
-                    { value: 5, label: "Parcial (5)" },
-                    { value: 10, label: "Cumple (10)" }
-                  ]}
-                />
 
                 <ScoreSelector
                   label="Puntualidad y Asistencia"
@@ -245,10 +234,10 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
                 />
 
                 <ScoreSelector
-                  label="Ánimo y Participación"
-                  description="Entusiasmo y participación activa en las actividades"
-                  value={evaluation.animo}
-                  onChange={(value) => setEvaluation(prev => ({ ...prev, animo: value as 0 | 5 | 10 }))}
+                  label="Actitud"
+                  description="Comportamiento y colaboración durante las actividades"
+                  value={evaluation.actitud}
+                  onChange={(value) => setEvaluation(prev => ({ ...prev, actitud: value as 0 | 5 | 10 }))}
                   options={[
                     { value: 0, label: "No cumple (0)" },
                     { value: 5, label: "Parcial (5)" },
@@ -256,17 +245,6 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
                   ]}
                 />
 
-                <ScoreSelector
-                  label="Trabajo Manual"
-                  description="Calidad y finalización de las actividades manuales"
-                  value={evaluation.trabajo_manual}
-                  onChange={(value) => setEvaluation(prev => ({ ...prev, trabajo_manual: value as 0 | 5 | 10 }))}
-                  options={[
-                    { value: 0, label: "No cumple (0)" },
-                    { value: 5, label: "Parcial (5)" },
-                    { value: 10, label: "Cumple (10)" }
-                  ]}
-                />
 
                 <ScoreSelector
                   label="Ánimo y Participación"
@@ -291,6 +269,7 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
                     { value: 10, label: "Cumple (10)" }
                   ]}
                 />
+
               </CardContent>
             </Card>
 

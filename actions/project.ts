@@ -13,11 +13,11 @@ export async function createProject(unsafeData: z.infer<typeof projectSchema>) {
     const { data: classroomData, error: classroomError } = await supabase
       .from('classrooms')
       .select('id')
-      .eq('nombre', data.data.classroom.charAt(0).toUpperCase() + data.data.classroom.slice(1))
+      .eq('nombre', data.data.classroom)
       .single()
 
     if (classroomError || !classroomData) {
-      return { success: false, error: "Classroom no encontrado" }
+      return { success: false, error: `Classroom "${data.data.classroom}" no encontrado` }
     }
 
     // Verificar si el alumno ya existe (búsqueda más flexible)
@@ -28,7 +28,6 @@ export async function createProject(unsafeData: z.infer<typeof projectSchema>) {
       .eq('edad', data.data.age)
 
     if (checkError) {
-      console.error('Error al verificar alumno existente:', checkError)
       return { success: false, error: "Error al verificar datos del alumno" }
     }
 
@@ -44,20 +43,26 @@ export async function createProject(unsafeData: z.infer<typeof projectSchema>) {
     }
 
     // Insertar en tabla alumnos
+    const insertData: any = {
+      nombre: data.data.childName,
+      apellidos: data.data.childLastname,
+      edad: data.data.age,
+      genero: data.data.gender,
+      nombre_padre: data.data.parentName,
+      telefono: data.data.parentPhone,
+      classroom_id: classroomData.id
+    }
+    
+    // Solo incluir telefono_niño si no es undefined
+    if (data.data.childPhone !== undefined) {
+      insertData.telefono_niño = data.data.childPhone
+    }
+    
     const { error: insertError } = await supabase
       .from('alumnos')
-      .insert({
-        nombre: data.data.childName,
-        apellidos: data.data.childLastname,
-        edad: data.data.age,
-        genero: data.data.gender,
-        nombre_padre: data.data.parentName,
-        telefono: data.data.parentPhone,
-        classroom_id: classroomData.id
-      })
+      .insert(insertData)
 
     if (insertError) {
-      console.error('Error al insertar alumno:', insertError)
       return { success: false, error: "Error al guardar en la base de datos" }
     }
 

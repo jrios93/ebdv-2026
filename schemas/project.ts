@@ -16,17 +16,36 @@ export const projectSchema = z.object({
     message: "Debe seleccionar niño o niña"
   }),
   parentName: z.string()
-    .min(2, "El nombre del padre/tutor es requerido")
-    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s'-]+$/, "El nombre solo puede contener letras, espacios, acentos, guiones y apóstrofes"),
-  parentPhone: z.string()
-    .regex(/^\+?[0-9\s()-]+$/, "Solo se permiten números, espacios, +, () y -")
-    .transform(val => val.replace(/\s/g, '').replace(/[()-]/g, ''))
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s'-]*$/, "El nombre solo puede contener letras, espacios, acentos, guiones y apóstrofes")
+    .optional(),
+  childPhone: z.string()
+    .regex(/^\+?[0-9\s()-]*$/, "Solo se permiten números, espacios, +, () y -")
+    .transform(val => val ? val.replace(/\s/g, '').replace(/[()-]/g, '') : '')
     .refine(val => {
+      if (!val) return true // Permitir vacío
       // Quitar el +51 si existe para contar solo los 9 dígitos del móvil
       const mobileOnly = val.replace(/^\+51/, '')
       return mobileOnly.length >= 7 && mobileOnly.length <= 9
     }, "El teléfono peruano debe tener entre 7-9 dígitos (ej: +51 999 123 456)")
-    .refine(val => val.length <= 15, "El teléfono no puede exceder 15 dígitos"),
+    .refine(val => {
+      if (!val) return true // Permitir vacío
+      return val.length <= 15
+    }, "El teléfono no puede exceder 15 dígitos")
+    .optional(),
+  parentPhone: z.string()
+    .regex(/^\+?[0-9\s()-]*$/, "Solo se permiten números, espacios, +, () y -")
+    .transform(val => val ? val.replace(/\s/g, '').replace(/[()-]/g, '') : '')
+    .refine(val => {
+      if (!val) return true // Permitir vacío
+      // Quitar el +51 si existe para contar solo los 9 dígitos del móvil
+      const mobileOnly = val.replace(/^\+51/, '')
+      return mobileOnly.length >= 7 && mobileOnly.length <= 9
+    }, "El teléfono peruano debe tener entre 7-9 dígitos (ej: +51 999 123 456)")
+    .refine(val => {
+      if (!val) return true // Permitir vacío
+      return val.length <= 15
+    }, "El teléfono no puede exceder 15 dígitos")
+    .optional(),
   classroom: z.enum(CLASSROOM_TYPES, {
     message: "Debe seleccionar una clase válida"
   }),

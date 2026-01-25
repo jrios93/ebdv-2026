@@ -70,8 +70,8 @@ export default function StaffPortalPage() {
           <CardContent className="space-y-6">
             {/* Role Selection */}
             <div className="space-y-3">
-              <label className="text-sm font-medium text-gray-700">Seleccione su rol:</label>
-              <div className="grid grid-cols-3 gap-3">
+              <label className="text-sm font-medium text-gray-700 ">Seleccione su rol:</label>
+              <div className="grid grid-cols-3 gap-3 mt-4">
                 <Button
                   type="button"
                   variant={selectedRole === "maestro" ? "default" : "outline"}
@@ -122,7 +122,7 @@ export default function StaffPortalPage() {
                   placeholder="Ingrese password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="border-gray-300 text-gray-900 focus:border-blue-500"
+                  className="border-gray-300 text-gray-900 focus:border-blue-500 py-6 px-4"
                   required
                 />
               </div>
@@ -135,7 +135,7 @@ export default function StaffPortalPage() {
 
               <Button
                 type="submit"
-                className="cursor-pointer w-full bg-accent/80 hover:bg-accent text-white"
+                className="cursor-pointer w-full bg-accent/80 hover:bg-accent py-6 text-white"
                 disabled={isLoading || !selectedRole}
               >
                 {isLoading ? "Verificando..." : `Ingresar como ${selectedRole || "..."}`}
@@ -155,12 +155,6 @@ export default function StaffPortalPage() {
                 <div>
                   <Shield className="w-4 h-4 inline mr-2" />
                   Acceso a resúmenes y estadísticas generales
-                </div>
-              )}
-              {!selectedRole && (
-                <div>
-                  <Shield className="w-4 h-4 inline mr-2" />
-                  Seleccione un rol para continuar
                 </div>
               )}
               {selectedRole === "jurado" && (

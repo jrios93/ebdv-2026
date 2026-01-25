@@ -1,6 +1,6 @@
 "use client"
 import { Controller } from "react-hook-form"
-import { useCallback } from "react"
+import { createElement, useCallback } from "react"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { getClassroomByAge } from "@/lib/classroom"
 import type { FormData } from "@/components/types"
+import { Asterisk } from "lucide-react"
+import { FaAsterisk } from "react-icons/fa"
 
 const formatPhoneNumber = (value: string) => {
   const cleaned = value.replace(/[^\d+]/g, '')
@@ -33,21 +35,21 @@ interface RegistrationFormProps {
 }
 
 export const RegistrationForm = ({ form, isSubmitting, onSubmit }: RegistrationFormProps) => {
-  const renderInput = useCallback((name: keyof FormData, label: string, placeholder: string, disabled: boolean = false) => (
+  const renderInput = useCallback((name: keyof FormData, label: string, placeholder: string, disabled: boolean = false, icon?: React.ReactElement | undefined) => (
     <Controller
       control={form.control}
       name={name}
       key={name}
       render={({ field, fieldState }) => (
         <Field data-invalid={fieldState.invalid} className="mb-4">
-          <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+          <FieldLabel htmlFor={field.name} className="text-lg md:text-xl">{label}{icon}</FieldLabel>
           <Input
             {...field}
             id={field.name}
             aria-invalid={fieldState.invalid}
             aria-describedby={fieldState.invalid ? `${field.name}-error` : undefined}
             placeholder={placeholder}
-            className="bg-background"
+            className="bg-background py-6 px-4 rounded-md"
             disabled={disabled || isSubmitting}
           />
           {fieldState.invalid && fieldState.error && (
@@ -67,42 +69,69 @@ export const RegistrationForm = ({ form, isSubmitting, onSubmit }: RegistrationF
         <CardContent className="space-y-4 ">
           {renderInput("childName", "Nombre del niño/a", "Ingresa el nombre", false)}
           {renderInput("childLastname", "Apellidos", "Ingresa los apellidos", false)}
+          <div className="grid grid-cols-2 gap-4">
+            <Controller
+              control={form.control}
+              name="age"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid} className="mb-4 ">
+                  <FieldLabel htmlFor={field.name}>Edad</FieldLabel>
+                  <select
+                    {...field}
+                    id={field.name}
+                    aria-invalid={fieldState.invalid}
+                    aria-describedby={fieldState.invalid ? `${field.name}-error` : undefined}
+                    onChange={(e) => {
+                      const age = parseInt(e.target.value)
+                      field.onChange(age)
+                      // Auto-asignar classroom basado en edad
+                      form.setValue('classroom', getClassroomByAge(age))
+                    }}
+                    disabled={isSubmitting}
+                    className="w-full flex h-12 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {[...Array(13)].map((_, i) => {
+                      const age = i + 3
+                      return (
+                        <option key={age} value={age}>
+                          {age} años
+                        </option>
+                      )
+                    })}
+                  </select>
+                  {fieldState.invalid && fieldState.error && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
 
-          <Controller
-            control={form.control}
-            name="age"
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid} className="mb-4">
-                <FieldLabel htmlFor={field.name}>Edad</FieldLabel>
-                <select
-                  {...field}
-                  id={field.name}
-                  aria-invalid={fieldState.invalid}
-                  aria-describedby={fieldState.invalid ? `${field.name}-error` : undefined}
-                  onChange={(e) => {
-                    const age = parseInt(e.target.value)
-                    field.onChange(age)
-                    // Auto-asignar classroom basado en edad
-                    form.setValue('classroom', getClassroomByAge(age))
-                  }}
-                  disabled={isSubmitting}
-                  className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {[...Array(13)].map((_, i) => {
-                    const age = i + 3
-                    return (
-                      <option key={age} value={age}>
-                        {age} años
-                      </option>
-                    )
-                  })}
-                </select>
-                {fieldState.invalid && fieldState.error && (
-                  <FieldError errors={[fieldState.error]} />
-                )}
-              </Field>
-            )}
-          />
+            <Controller
+              control={form.control}
+              name="childPhone"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid} className="mb-4">
+                  <FieldLabel htmlFor={field.name}>Teléfono del niño/a</FieldLabel>
+                  <Input
+                    {...field}
+                    id={field.name}
+                    aria-invalid={fieldState.invalid}
+                    aria-describedby={fieldState.invalid ? `${field.name}-error` : undefined}
+                    placeholder="Ejm: 925 439 390 "
+                    className="bg-background px-4 py-6"
+                    disabled={isSubmitting}
+                    onChange={(e) => {
+                      const formatted = formatPhoneNumber(e.target.value)
+                      field.onChange(formatted)
+                    }}
+                  />
+                  {fieldState.invalid && fieldState.error && (
+                    <FieldError errors={[fieldState.error]} id={`${field.name}-error`} />
+                  )}
+                </Field>
+              )}
+            />
+          </div>
 
           <Controller
             control={form.control}
@@ -137,21 +166,21 @@ export const RegistrationForm = ({ form, isSubmitting, onSubmit }: RegistrationF
           <Separator className="my-6" />
 
           <div className="space-y-4">
-            <p className="text-sm font-medium text-foreground text-center">Datos del Padre/Madre/Tutor</p>
+            <p className="text-base font-medium text-foreground text-center">Datos del Padre/Madre/Tutor</p>
             {renderInput("parentName", "Nombre completo", "Nombre del responsable", false)}
             <Controller
               control={form.control}
               name="parentPhone"
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid} className="mb-4">
-                  <FieldLabel htmlFor={field.name}>Teléfono</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>Teléfono del padre/madre/tutor</FieldLabel>
                   <Input
                     {...field}
                     id={field.name}
                     aria-invalid={fieldState.invalid}
                     aria-describedby={fieldState.invalid ? `${field.name}-error` : undefined}
                     placeholder="Ej: +51 925 439 390 o 925 439 390"
-                    className="bg-background"
+                    className="bg-background px-4 py-6"
                     disabled={isSubmitting}
                     onChange={(e) => {
                       const formatted = formatPhoneNumber(e.target.value)
