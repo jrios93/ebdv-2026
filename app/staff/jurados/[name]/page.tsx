@@ -37,7 +37,7 @@ export default function JuradosClassroomPage({ params }: { params: Promise<{ nam
       // Cargar puntuación existente
       try {
         const today = new Date().toISOString().split('T')[0]
-        const classroomId = await getClassroomIdByName(classroomName)
+        const classroomId = await getClassroomIdByName(className)
         if (!classroomId) {
           console.error('Classroom ID no encontrado para:', className)
           return

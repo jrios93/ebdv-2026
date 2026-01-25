@@ -41,11 +41,11 @@ export default function MaestrosClassroomPage({ params }: { params: Promise<{ na
   const classroomInfo = classroomName ? getClassroomInfo(classroomName) : null
 
   useEffect(() => {
-    if (!classroomName) return
+    if (!classroomName || classroomName.trim() === '') return
 
     const loadAlumnos = async () => {
       try {
-        const classroomId = await getClassroomIdByName(classroomName)
+        const classroomId = await getClassroomIdByName(classroomName.trim())
         if (!classroomId) {
           console.error('Classroom no encontrado:', classroomName)
           setIsLoading(false)
