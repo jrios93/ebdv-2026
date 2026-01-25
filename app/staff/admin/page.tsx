@@ -17,6 +17,12 @@ import {
   getAlumnosPorSalon,
   getResumenSemanal
 } from "@/lib/supabaseQueries"
+import { 
+  getRankingInvitados, 
+  getCampeonInvitados,
+  getTotalInvitadosPeriodo,
+  getInvitadosLevel 
+} from "@/lib/invitados"
 
 interface Stats {
   totalAlumnos: number
@@ -55,19 +61,27 @@ export default function AdminPage() {
       totalInvitados: number
     } | null
   }>({ rankingAlumnos: [], rankingSalones: [], campeonInvitados: null })
+  
+  // Estados adicionales para invitados
+  const [rankingInvitados, setRankingInvitados] = useState<any[]>([])
+  const [campeonInvitadosActual, setCampeonInvitadosActual] = useState<any>(null)
+  const [totalInvitadosPeriodo, setTotalInvitadosPeriodo] = useState<number>(0)
   const [isLoading, setIsLoading] = useState(true)
   const [isExporting, setIsExporting] = useState(false)
 
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
-        const [statsData, alumnosData, rankingData, invitadosData, salonData, semanalData] = await Promise.all([
+        const [statsData, alumnosData, rankingData, invitadosData, salonData, semanalData, invitadosRankingData, campeonData, totalInvitadosData] = await Promise.all([
           getStatsDashboard(),
           getTopAlumnosToday(5),
           getClassroomRankingToday(),
           getTopInvitadosToday(3),
           getAlumnosPorSalon(),
-          getResumenSemanal()
+          getResumenSemanal(),
+          getRankingInvitados(7),
+          getCampeonInvitados(7),
+          getTotalInvitadosPeriodo(7)
         ])
 
         setStats(statsData)
@@ -76,6 +90,11 @@ export default function AdminPage() {
         setTopInvitados(invitadosData || [])
         setAlumnosPorSalon(salonData || [])
         setResumenSemanal(semanalData)
+        
+        // Datos de invitados (acumulados)
+        setRankingInvitados(invitadosRankingData || [])
+        setCampeonInvitadosActual(campeonData)
+        setTotalInvitadosPeriodo(totalInvitadosData || 0)
       } catch (error) {
         console.error('Error loading dashboard:', error)
       } finally {

@@ -15,6 +15,7 @@ import {
 } from "@/lib/supabaseQueries"
 import { ScoreSelector } from "@/components/ui/score-selector"
 import { PreguntasSelector } from "@/components/ui/preguntas-selector"
+import { InvitadosSelector } from "@/components/ui/invitados-selector"
 
 interface EvaluationForm {
   actitud: 0 | 5 | 10
@@ -325,17 +326,10 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
                   ]}
                 />
                 
-                <ScoreSelector
-                  label="Invitados Hoy"
-                  description="Número de amigos que invitó a la EBDV"
+                <InvitadosSelector
                   value={evaluation.invitados_hoy}
                   onChange={(value) => setEvaluation(prev => ({ ...prev, invitados_hoy: value }))}
-                  options={[
-                    { value: 0, label: "Ninguno (0)" },
-                    { value: 1, label: "1 invitado (1)" },
-                    { value: 2, label: "2 invitados (2)" },
-                    { value: 3, label: "3 invitados (3)" }
-                  ]}
+                  max={6}
                 />
               </CardContent>
             </Card>
