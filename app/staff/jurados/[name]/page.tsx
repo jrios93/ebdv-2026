@@ -34,7 +34,7 @@ export default function JuradosClassroomPage({ params }: { params: Promise<{ nam
       const className = resolvedParams.name
       setClassroomName(className)
       
-      // Cargar puntuación existente
+      // 🎯 LÓGICA INTELIGENTE DE CARGA
       try {
         const today = new Date().toISOString().split('T')[0]
         const classroomId = await getClassroomIdByName(className)
@@ -46,6 +46,7 @@ export default function JuradosClassroomPage({ params }: { params: Promise<{ nam
         const puntuacionExistente = await getPuntuacionGrupalHoy(classroomId, today)
         
         if (puntuacionExistente) {
+          // ✅ Si ya fue evaluado hoy, cargar valores existentes
           setEvaluation({
             puntualidad: puntuacionExistente.puntualidad as 0 | 2.5 | 5 | 7.5 | 10,
             animo_y_barras: puntuacionExistente.animo_y_barras as 0 | 5 | 10 | 15 | 20,
@@ -53,6 +54,17 @@ export default function JuradosClassroomPage({ params }: { params: Promise<{ nam
             verso_memoria: puntuacionExistente.verso_memoria as 0 | 5 | 10 | 15 | 20,
             preguntas_correctas: puntuacionExistente.preguntas_correctas as 0 | 5 | 10 | 15 | 20 | 25 | 30
           })
+          console.log('✅ Cargando evaluación grupal existente del día')
+        } else {
+          // ✅ Si no ha sido evaluado hoy, iniciar con valores base
+          setEvaluation({
+            puntualidad: 0,
+            animo_y_barras: 0,
+            orden: 0,
+            verso_memoria: 0,
+            preguntas_correctas: 0
+          })
+          console.log('🆕 Iniciando nueva evaluación grupal (valores base)')
         }
       } catch (error) {
         console.error('Error loading puntuacion existente:', error)

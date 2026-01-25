@@ -25,6 +25,7 @@ const InscripcionPage = () => {
       gender: "niño",
       parentName: "",
       parentPhone: "",
+      childPhone: "",  // Inicializar como string vacío
       classroom: getClassroomByAge(3),
     },
     resolver: zodResolver(projectSchema),
@@ -47,6 +48,7 @@ const InscripcionPage = () => {
           gender: "niño",
           parentName: "",
           parentPhone: "",
+          childPhone: "",  // Resetear como string vacío
           classroom: getClassroomByAge(3),
         })
         toast.success("¡Inscripción completada exitosamente!")

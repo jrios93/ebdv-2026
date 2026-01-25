@@ -20,26 +20,21 @@ export async function createProject(unsafeData: z.infer<typeof projectSchema>) {
       return { success: false, error: `Classroom "${data.data.classroom}" no encontrado` }
     }
 
-    // Verificar si el alumno ya existe (búsqueda más flexible)
+    // Verificar si el alumno ya existe (búsqueda exacta para duplicados)
     const { data: existingAlumnos, error: checkError } = await supabase
       .from('alumnos')
-      .select('id, nombre, apellidos, telefono, edad')
-      .or(`nombre.ilike.%${data.data.childName}%,apellidos.ilike.%${data.data.childLastname}%,telefono.eq.${data.data.parentPhone}`)
+      .select('id, nombre, apellidos, edad')
+      .eq('nombre', data.data.childName.trim())
+      .eq('apellidos', data.data.childLastname.trim())
       .eq('edad', data.data.age)
 
     if (checkError) {
       return { success: false, error: "Error al verificar datos del alumno" }
     }
 
-    // Verificar coincidencias exactas o muy similares
-    const exactMatch = existingAlumnos?.find(alumno => 
-      (alumno.nombre.toLowerCase().trim() === data.data.childName.toLowerCase().trim() &&
-       alumno.apellidos.toLowerCase().trim() === data.data.childLastname.toLowerCase().trim()) ||
-      alumno.telefono === data.data.parentPhone
-    )
-
-    if (exactMatch) {
-      return { success: false, error: "⚠️ Este alumno ya está registrado. Si crees que es un error, contacta al administrador." }
+    // Solo bloquear si es exactamente la misma persona (nombre + apellido + edad)
+    if (existingAlumnos && existingAlumnos.length > 0) {
+      return { success: false, error: "⚠️ Este alumno ya está registrado con el mismo nombre, apellido y edad. Si crees que es un error, contacta al administrador." }
     }
 
     // Insertar en tabla alumnos
