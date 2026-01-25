@@ -148,10 +148,10 @@ export default function AdminPage() {
 
 
   const classrooms = [
-    { name: "vida", title: "Vida", icon: Heart, color: "bg-green-100 text-green-700 border-green-300" },
-    { name: "luz", title: "Luz", icon: Star, color: "bg-yellow-100 text-yellow-700 border-yellow-300" },
-    { name: "gracia", title: "Gracia", icon: Heart, color: "bg-red-100 text-red-700 border-red-300" },
-    { name: "verdad", title: "Verdad", icon: Trophy, color: "bg-blue-100 text-blue-700 border-blue-300" }
+    { name: "vida", title: "vida", icon: Heart, color: "bg-green-100 text-green-700 border-green-300" },
+    { name: "luz", title: "luz", icon: Star, color: "bg-yellow-100 text-yellow-700 border-yellow-300" },
+    { name: "gracia", title: "gracia", icon: Heart, color: "bg-red-100 text-red-700 border-red-300" },
+    { name: "verdad", title: "verdad", icon: Trophy, color: "bg-blue-100 text-blue-700 border-blue-300" }
   ]
 
   // Calcular totales para decisiones operativas

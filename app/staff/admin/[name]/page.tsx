@@ -19,10 +19,10 @@ export default function ClassroomOptionsPage({ params }: { params: Promise<{ nam
   }, [params])
 
   const classroomConfig = {
-    vida: { title: "Vida", icon: Heart, color: "bg-green-100 text-green-700 border-green-300" },
-    luz: { title: "Luz", icon: Star, color: "bg-yellow-100 text-yellow-700 border-yellow-300" },
-    gracia: { title: "Gracia", icon: Heart, color: "bg-red-100 text-red-700 border-red-300" },
-    verdad: { title: "Verdad", icon: Trophy, color: "bg-blue-100 text-blue-700 border-blue-300" }
+    vida: { title: "vida", icon: Heart, color: "bg-green-100 text-green-700 border-green-300" },
+    luz: { title: "luz", icon: Star, color: "bg-yellow-100 text-yellow-700 border-yellow-300" },
+    gracia: { title: "gracia", icon: Heart, color: "bg-red-100 text-red-700 border-red-300" },
+    verdad: { title: "verdad", icon: Trophy, color: "bg-blue-100 text-blue-700 border-blue-300" }
   }
 
   const classroom = classroomName ? classroomConfig[classroomName as keyof typeof classroomConfig] : null

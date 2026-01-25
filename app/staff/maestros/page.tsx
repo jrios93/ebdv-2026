@@ -9,25 +9,25 @@ import { StaffGuard } from "@/components/StaffGuard"
 const classrooms = [
   {
     name: "vida",
-    title: "Vida",
+    title: "vida",
     description: "Aulas de nivel inicial",
     ageRange: "3-5 años"
   },
   {
     name: "luz",
-    title: "Luz",
+    title: "luz",
     description: "Aulas de nivel primario bajo",
     ageRange: "6-9 años"
   },
   {
     name: "gracia",
-    title: "Gracia",
+    title: "gracia",
     description: "Aulas de nivel primario medio",
     ageRange: "10-12 años"
   },
   {
     name: "verdad",
-    title: "Verdad",
+    title: "verdad",
     description: "Aulas de nivel primario alto",
     ageRange: "13-15 años"
   }

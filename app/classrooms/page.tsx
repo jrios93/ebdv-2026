@@ -5,7 +5,7 @@ import { Users, Trophy, Star, Heart } from "lucide-react"
 const classrooms = [
   {
     name: "vida",
-    title: "Vida",
+    title: "vida",
     description: "Aulas de nivel inicial",
     icon: Heart,
     color: "bg-red-500",
@@ -14,7 +14,7 @@ const classrooms = [
   },
   {
     name: "luz",
-    title: "Luz",
+    title: "luz",
     description: "Aulas de nivel primario bajo",
     icon: Star,
     color: "bg-yellow-500",
@@ -23,7 +23,7 @@ const classrooms = [
   },
   {
     name: "gracia",
-    title: "Gracia",
+    title: "gracia",
     description: "Aulas de nivel primario medio",
     icon: Users,
     color: "bg-green-500",
@@ -32,7 +32,7 @@ const classrooms = [
   },
   {
     name: "verdad",
-    title: "Verdad",
+    title: "verdad",
     description: "Aulas de nivel primario alto",
     icon: Trophy,
     color: "bg-blue-500",
