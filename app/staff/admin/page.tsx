@@ -7,9 +7,9 @@ import { Users, Trophy, Star, Heart, LogOut, Clock, Shield, TrendingUp, Award, U
 import { StaffGuard } from "@/components/StaffGuard"
 import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
-import { 
-  getStatsDashboard, 
-  getTopAlumnosToday, 
+import {
+  getStatsDashboard,
+  getTopAlumnosToday,
   getClassroomRankingToday,
   getTopInvitadosToday,
   getAllEvaluacionesToday,
@@ -17,12 +17,15 @@ import {
   getAlumnosPorSalon,
   getResumenSemanal
 } from "@/lib/supabaseQueries"
-import { 
-  getRankingInvitados, 
+import {
+  getRankingInvitados,
   getCampeonInvitados,
   getTotalInvitadosPeriodo,
-  getInvitadosLevel 
+  getInvitadosLevel
 } from "@/lib/invitados"
+import { SimpleResetManager } from "@/components/admin/simple-reset-manager"
+import { FaBible, FaDove, FaSeedling } from "react-icons/fa"
+import { IoSunnySharp } from "react-icons/io5"
 
 interface Stats {
   totalAlumnos: number
@@ -43,7 +46,7 @@ export default function AdminPage() {
   const [topAlumnos, setTopAlumnos] = useState<any[]>([])
   const [classroomRanking, setClassroomRanking] = useState<any[]>([])
   const [topInvitados, setTopInvitados] = useState<any[]>([])
-  const [alumnosPorSalon, setAlumnosPorSalon] = useState<Array<{salon: string, cantidad: number, asistidos: number}>>([])
+  const [alumnosPorSalon, setAlumnosPorSalon] = useState<Array<{ salon: string, cantidad: number, asistidos: number }>>([])
   const [resumenSemanal, setResumenSemanal] = useState<{
     rankingAlumnos: Array<{
       alumno: any
@@ -61,7 +64,7 @@ export default function AdminPage() {
       totalInvitados: number
     } | null
   }>({ rankingAlumnos: [], rankingSalones: [], campeonInvitados: null })
-  
+
   // Estados adicionales para invitados
   const [rankingInvitados, setRankingInvitados] = useState<any[]>([])
   const [campeonInvitadosActual, setCampeonInvitadosActual] = useState<any>(null)
@@ -90,7 +93,7 @@ export default function AdminPage() {
         setTopInvitados(invitadosData || [])
         setAlumnosPorSalon(salonData || [])
         setResumenSemanal(semanalData)
-        
+
         // Datos de invitados (acumulados)
         setRankingInvitados(invitadosRankingData || [])
         setCampeonInvitadosActual(campeonData)
@@ -117,10 +120,10 @@ export default function AdminPage() {
       const ws = XLSX.utils.json_to_sheet(data)
       const wb = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(wb, ws, 'Evaluaciones Hoy')
-      
+
       const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
       const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-      
+
       const fileName = `evaluaciones_${new Date().toISOString().split('T')[0]}.xlsx`
       saveAs(blob, fileName)
     } catch (error) {
@@ -143,10 +146,10 @@ export default function AdminPage() {
       const ws = XLSX.utils.json_to_sheet(data)
       const wb = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(wb, ws, 'Salones Hoy')
-      
+
       const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
       const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-      
+
       const fileName = `salones_${new Date().toISOString().split('T')[0]}.xlsx`
       saveAs(blob, fileName)
     } catch (error) {
@@ -167,10 +170,10 @@ export default function AdminPage() {
 
 
   const classrooms = [
-    { name: "vida", title: "vida", icon: Heart, color: "bg-green-100 text-green-700 border-green-300" },
-    { name: "luz", title: "luz", icon: Star, color: "bg-yellow-100 text-yellow-700 border-yellow-300" },
-    { name: "gracia", title: "gracia", icon: Heart, color: "bg-red-100 text-red-700 border-red-300" },
-    { name: "verdad", title: "verdad", icon: Trophy, color: "bg-blue-100 text-blue-700 border-blue-300" }
+    { name: "vida", title: "vida", icon: FaSeedling, color: "bg-green-100 text-green-700 border-green-300" },
+    { name: "luz", title: "luz", icon: IoSunnySharp, color: "bg-yellow-100 text-yellow-700 border-yellow-300" },
+    { name: "gracia", title: "gracia", icon: FaDove, color: "bg-red-100 text-red-700 border-red-300" },
+    { name: "verdad", title: "verdad", icon: FaBible, color: "bg-blue-100 text-blue-700 border-blue-300" }
   ]
 
   // Calcular totales para decisiones operativas
@@ -188,11 +191,11 @@ export default function AdminPage() {
               <span className="text-green-500">B</span>
               <span className="text-orange-500">D</span>
               <span className="text-blue-500">V</span>
-              <span className="text-purple-500">2026</span>
+              <span className="text-accent">2026</span>
             </h1>
             <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground mb-2">
-              <Shield className="w-4 h-4" />
-              <span className="font-medium">Panel de Administración</span>
+              <Shield className="w-4 h-4 text-chart-4" />
+              <span className="font-medium text-chart-4">Panel de Administración</span>
             </div>
             <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
               <Clock className="w-4 h-4" />
@@ -220,7 +223,7 @@ export default function AdminPage() {
                       const classroom = classrooms.find(c => c.name === salon.salon.toLowerCase())
                       const IconComponent = classroom?.icon || Users
                       const color = classroom?.color || "bg-gray-100 text-gray-700 border-gray-300"
-                      
+
                       return (
                         <div key={salon.salon} className={`p-6 rounded-lg border-2 ${color} text-center shadow-sm hover:shadow-md transition-shadow`}>
                           <IconComponent className="w-10 h-10 mx-auto mb-3" />
@@ -295,15 +298,14 @@ export default function AdminPage() {
                   ) : resumenSemanal.rankingAlumnos.length > 0 ? (
                     <div className="space-y-3">
                       {resumenSemanal.rankingAlumnos.slice(0, 5).map((item, index) => {
-                        const isFirstInClassroom = index === 0 || 
-                          (index > 0 && resumenSemanal.rankingAlumnos[index-1].alumno.classroom_id !== item.alumno.classroom_id)
-                        
+                        const isFirstInClassroom = index === 0 ||
+                          (index > 0 && resumenSemanal.rankingAlumnos[index - 1].alumno.classroom_id !== item.alumno.classroom_id)
+
                         return (
-                          <div key={item.alumno.id} className={`relative rounded-lg p-3 transition-all ${
-                            isFirstInClassroom 
-                              ? 'bg-gradient-to-r from-yellow-100 to-orange-100 border-2 border-yellow-300 shadow-sm' 
-                              : 'bg-white/70'
-                          }`}>
+                          <div key={item.alumno.id} className={`relative rounded-lg p-3 transition-all ${isFirstInClassroom
+                            ? 'bg-gradient-to-r from-yellow-100 to-orange-100 border-2 border-yellow-300 shadow-sm'
+                            : 'bg-white/70'
+                            }`}>
                             {isFirstInClassroom && (
                               <div className="absolute -top-2 -right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full font-bold">
                                 🏆
@@ -311,11 +313,10 @@ export default function AdminPage() {
                             )}
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold shadow ${
-                                  index === 0 ? 'bg-gradient-to-br from-yellow-400 to-orange-500' : 
-                                  index === 1 ? 'bg-gray-400' : 
-                                  index === 2 ? 'bg-orange-600' : 'bg-gray-300'
-                                }`}>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold shadow ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-orange-500' :
+                                  index === 1 ? 'bg-gray-400' :
+                                    index === 2 ? 'bg-orange-600' : 'bg-gray-300'
+                                  }`}>
                                   {item.posicion}
                                 </div>
                                 <div>
@@ -359,20 +360,18 @@ export default function AdminPage() {
                       {resumenSemanal.rankingSalones.map((salon, index) => {
                         const classroom = classrooms.find(c => c.name === salon.salon.toLowerCase())
                         const IconComponent = classroom?.icon || TrendingUp
-                        
+
                         return (
-                          <div key={salon.salon} className={`flex items-center justify-between rounded-lg p-3 transition-all ${
-                            index === 0 ? 'bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-300 shadow-sm' : 'bg-white/70'
-                          }`}>
+                          <div key={salon.salon} className={`flex items-center justify-between rounded-lg p-3 transition-all ${index === 0 ? 'bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-300 shadow-sm' : 'bg-white/70'
+                            }`}>
                             <div className="flex items-center gap-3">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold shadow ${
-                                index === 0 ? 'bg-gradient-to-br from-green-400 to-emerald-500' : 
-                                index === 1 ? 'bg-blue-500' : 
-                                index === 2 ? 'bg-purple-500' : 'bg-gray-400'
-                              }`}>
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold shadow ${index === 0 ? 'bg-gradient-to-br from-green-400 to-emerald-500' :
+                                index === 1 ? 'bg-blue-500' :
+                                  index === 2 ? 'bg-purple-500' : 'bg-gray-400'
+                                }`}>
                                 {salon.posicion}
                               </div>
-                              <IconComponent className="w-5 h-5" />
+                              <IconComponent className={`w-5 h-5 ${classroom?.color}`} />
                               <div>
                                 <p className="font-semibold capitalize text-sm">{salon.salon}</p>
                                 <p className="text-xs text-muted-foreground">{salon.totalPuntos} puntos acumulados</p>
@@ -460,7 +459,7 @@ export default function AdminPage() {
                       </CardContent>
                     </Card>
                   </Link>
-                  
+
                   {classrooms.map((classroom) => {
                     const IconComponent = classroom.icon
                     return (
@@ -478,6 +477,9 @@ export default function AdminPage() {
               </CardContent>
             </Card>
 
+            {/* Reset Manager */}
+            <SimpleResetManager />
+
             {/* Export Actions */}
             <Card className="border-border">
               <CardHeader>
@@ -488,7 +490,7 @@ export default function AdminPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 gap-3">
-                  <Button 
+                  <Button
                     onClick={exportEvaluacionesToExcel}
                     disabled={isExporting || isLoading}
                     className="flex items-center gap-2"
@@ -496,7 +498,7 @@ export default function AdminPage() {
                     <Download className="w-4 h-4" />
                     {isExporting ? 'Exportando...' : 'Evaluaciones de Alumnos (Excel)'}
                   </Button>
-                  <Button 
+                  <Button
                     onClick={exportSalonesToExcel}
                     disabled={isExporting || isLoading}
                     variant="outline"
@@ -512,10 +514,10 @@ export default function AdminPage() {
 
           {/* Logout */}
           <div className="text-center">
-            <Button 
+            <Button
               onClick={handleLogout}
               variant="outline"
-              className="border-border text-muted-foreground hover:bg-muted"
+              className="border-destructive text-gray-700 hover:bg-destructive cursor-pointer"
             >
               <LogOut className="w-4 h-4 mr-2" />
               Cerrar Sesión

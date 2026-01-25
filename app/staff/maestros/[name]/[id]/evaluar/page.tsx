@@ -8,10 +8,10 @@ import { Badge } from "@/components/ui/badge"
 import { StaffGuard } from "@/components/StaffGuard"
 import { ArrowLeft, Users, Star, CheckCircle, Clock, Save } from "lucide-react"
 import { getClassroomInfo } from "@/lib/classroom"
-import { 
-  getAlumnoById, 
-  savePuntuacionIndividual, 
-  getPuntuacionIndividualHoy 
+import {
+  getAlumnoById,
+  savePuntuacionIndividual,
+  getPuntuacionIndividualHoy
 } from "@/lib/supabaseQueries"
 import { ScoreSelector } from "@/components/ui/score-selector"
 import { PreguntasSelector } from "@/components/ui/preguntas-selector"
@@ -55,10 +55,10 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
         setAlumno(alumnoData)
 
         // Verificar si ya tiene puntuación hoy
-      if (!alumnoId) return
-      const today = new Date().toISOString().split('T')[0]
+        if (!alumnoId) return
+        const today = new Date().toISOString().split('T')[0]
         const puntuacionExistente = await getPuntuacionIndividualHoy(alumnoId, today)
-        
+
         if (puntuacionExistente) {
           // Cargar evaluación existente
           setEvaluation({
@@ -80,12 +80,12 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
   }, [alumnoId])
 
   const calculateTotal = () => {
-    return evaluation.actitud + 
-           evaluation.puntualidad_asistencia + 
-           evaluation.animo + 
-           evaluation.trabajo_manual + 
-           evaluation.verso_memoria + 
-           evaluation.aprestamiento_biblico
+    return evaluation.actitud +
+      evaluation.puntualidad_asistencia +
+      evaluation.animo +
+      evaluation.trabajo_manual +
+      evaluation.verso_memoria +
+      evaluation.aprestamiento_biblico
   }
 
   const getGrade = (score: number) => {
@@ -97,37 +97,37 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
 
   const handleSave = async () => {
     setIsSaving(true)
-    
+
     try {
       // Obtener classroom_id y maestro_id (del localStorage o auth)
       const classroomId = await (await import('@/lib/supabaseQueries')).getClassroomIdByName(classroomName)
       const maestroId = localStorage.getItem('staffUserId') || null
-      
+
       if (!classroomId) {
         throw new Error('Classroom no encontrado')
       }
 
-        const puntuacionData: any = {
-          alumno_id: alumnoId,
-          fecha: new Date().toISOString().split('T')[0],
-          actitud: evaluation.actitud,
-          puntualidad_asistencia: evaluation.puntualidad_asistencia,
-          animo: evaluation.animo,
-          trabajo_manual: evaluation.trabajo_manual,
-          verso_memoria: evaluation.verso_memoria,
-          aprestamiento_biblico: evaluation.aprestamiento_biblico,
-          invitados_hoy: evaluation.invitados_hoy,
-        }
-        
-        // Solo incluir maestro_registro_id si es un UUID válido
-        if (maestroId && maestroId !== 'temp-maestro-id') {
-          puntuacionData.maestro_registro_id = maestroId
-        }
+      const puntuacionData: any = {
+        alumno_id: alumnoId,
+        fecha: new Date().toISOString().split('T')[0],
+        actitud: evaluation.actitud,
+        puntualidad_asistencia: evaluation.puntualidad_asistencia,
+        animo: evaluation.animo,
+        trabajo_manual: evaluation.trabajo_manual,
+        verso_memoria: evaluation.verso_memoria,
+        aprestamiento_biblico: evaluation.aprestamiento_biblico,
+        invitados_hoy: evaluation.invitados_hoy,
+      }
+
+      // Solo incluir maestro_registro_id si es un UUID válido
+      if (maestroId && maestroId !== 'temp-maestro-id') {
+        puntuacionData.maestro_registro_id = maestroId
+      }
 
       // Primero intentar guardar, si ya existe, actualizarlo
       const { savePuntuacionIndividual, updatePuntuacionIndividual, getPuntuacionIndividualHoy } = await import('@/lib/supabaseQueries')
       const existente = await getPuntuacionIndividualHoy(alumnoId, puntuacionData.fecha)
-      
+
       let success
       if (existente) {
         // Actualizar el registro existente
@@ -136,9 +136,9 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
         // Crear nuevo registro
         success = await savePuntuacionIndividual(puntuacionData)
       }
-      
+
       if (success) {
-          router.push(`/staff/maestros/${classroomName}`)
+        router.push(`/staff/maestros/${classroomName}`)
       } else {
         throw new Error('Error al guardar puntuación')
       }
@@ -178,7 +178,7 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
               <ArrowLeft className="w-4 h-4 mr-2" />
               Volver a lista de alumnos
             </Link>
-            
+
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-bold text-foreground">
@@ -199,7 +199,7 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
                   </Badge>
                 </div>
               </div>
-              
+
               <div className="text-right">
                 <div className="text-sm text-muted-foreground">Puntuación Total</div>
                 <div className="text-3xl font-bold text-foreground">{totalScore}</div>
@@ -231,7 +231,7 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
                     { value: 10, label: "Cumple (10)" }
                   ]}
                 />
-                
+
                 <ScoreSelector
                   label="Puntualidad y Asistencia"
                   description="Llegada a tiempo y presencia durante la sesión"
@@ -243,7 +243,7 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
                     { value: 10, label: "Cumple (10)" }
                   ]}
                 />
-                
+
                 <ScoreSelector
                   label="Ánimo y Participación"
                   description="Entusiasmo y participación activa en las actividades"
@@ -255,7 +255,7 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
                     { value: 10, label: "Cumple (10)" }
                   ]}
                 />
-                
+
                 <ScoreSelector
                   label="Trabajo Manual"
                   description="Calidad y finalización de las actividades manuales"
@@ -267,7 +267,7 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
                     { value: 10, label: "Cumple (10)" }
                   ]}
                 />
-                
+
                 <ScoreSelector
                   label="Ánimo y Participación"
                   description="Entusiasmo y participación activa en las actividades"
@@ -279,7 +279,7 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
                     { value: 10, label: "Cumple (10)" }
                   ]}
                 />
-                
+
                 <ScoreSelector
                   label="Trabajo Manual"
                   description="Calidad y finalización de las actividades manuales"
@@ -301,7 +301,7 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
                   Criterios Especiales
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Verso de memoria y aprendizamiento bíblico (0-30 pts) + Invitados hoy (para premio especial)
+                  Verso de memoria y aprendizamiento bíblico (0-30 pts) + Invitados hoy (se acumulan para competencia semanal)
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -316,7 +316,7 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
                     { value: 30, label: "Completo (30)" }
                   ]}
                 />
-                
+
                 <ScoreSelector
                   label="Aprestamiento Bíblico"
                   description="Comprensión y aplicación de la enseñanza bíblica"
@@ -328,7 +328,7 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
                     { value: 30, label: "Cumple (30)" }
                   ]}
                 />
-                
+
                 <InvitadosSelector
                   value={evaluation.invitados_hoy}
                   onChange={(value) => setEvaluation(prev => ({ ...prev, invitados_hoy: value }))}
@@ -345,8 +345,8 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
                 Cancelar
               </Button>
             </Link>
-            
-            <Button 
+
+            <Button
               onClick={handleSave}
               disabled={isSaving}
               className="bg-primary hover:bg-primary text-primary-foreground"
