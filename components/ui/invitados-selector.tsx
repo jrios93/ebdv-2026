@@ -14,12 +14,12 @@ export function InvitadosSelector({
   value, 
   onChange, 
   disabled = false, 
-  max = 6 
+  max = 7 
 }: InvitadosSelectorProps) {
   const options = Array.from({ length: max + 1 }, (_, i) => ({
     value: i,
     label: i === 0 ? "Ninguno" : `${i} invitado${i > 1 ? 's' : ''}`,
-    description: i === 0 ? "No trajo amigos hoy" : `Trajo ${i} amigo${i > 1 ? 's' : ''}`
+    description: i === 0 ? "No trajo amigos hoy" : `Trajo ${i} amigo${i > 1 ? 's' : ''} hoy`
   }))
 
   return (
@@ -31,7 +31,7 @@ export function InvitadosSelector({
         </h4>
       </div>
       <p className="text-xs text-muted-foreground">
-        Número de amigos que invitó a la EBDV (Máx. {max} para premio especial)
+        Amigos que invitó hoy a la EBDV (Máx. {max} para premio especial)
       </p>
       
       <div className="grid grid-cols-4 gap-2">
@@ -81,13 +81,13 @@ export function InvitadosSelector({
       {value >= 4 && (
         <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
           <p className="text-xs text-yellow-700 font-medium">
-            🏆 ¡Excelente! {value} invitados te ponen en competencia por el premio especial
+            🏆 ¡Excelente! {value} invitados hoy te acercan al premio especial
           </p>
         </div>
       )}
       
       <div className="text-[10px] text-muted-foreground text-center">
-        Total acumulado esta semana: {/* Aquí podríamos mostrar el total semanal */}
+        Solo para registro diario. El ranking se calcula automáticamente.
       </div>
     </div>
   )

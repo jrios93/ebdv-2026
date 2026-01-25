@@ -24,7 +24,7 @@ interface EvaluationForm {
   trabajo_manual: 0 | 5 | 10
   verso_memoria: 0 | 15 | 30
   aprestamiento_biblico: 0 | 15 | 30
-  invitados_hoy: number
+  invitados_hoy: number // 0-7 invitados hoy (no acumulado)
 }
 
 export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: string; id: string }> }) {
@@ -41,7 +41,7 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
     trabajo_manual: 5,
     verso_memoria: 15,
     aprestamiento_biblico: 15,
-    invitados_hoy: 0
+    invitados_hoy: 0 // Solo invitados de hoy
   })
 
   const classroomInfo = getClassroomInfo(classroomName)
@@ -298,8 +298,11 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CheckCircle className="w-5 h-5 text-blue-500" />
-                  Criterios Especiales (0-30 pts)
+                  Criterios Especiales
                 </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Verso de memoria y aprendizamiento bíblico (0-30 pts) + Invitados hoy (para premio especial)
+                </p>
               </CardHeader>
               <CardContent className="space-y-6">
                 <ScoreSelector
@@ -329,7 +332,7 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
                 <InvitadosSelector
                   value={evaluation.invitados_hoy}
                   onChange={(value) => setEvaluation(prev => ({ ...prev, invitados_hoy: value }))}
-                  max={6}
+                  max={7}
                 />
               </CardContent>
             </Card>
