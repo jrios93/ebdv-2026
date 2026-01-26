@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeftIcon, ClockIcon, UsersIcon, CheckCircleIcon } from "lucide-react";
-import { obtenerEvaluacionDelDia, guardarEvaluacion } from "@/lib/juradoService";
+import { obtenerEvaluacionDelDia, guardarEvaluacion, getClassroomIdByName } from "@/lib/juradoService";
 
 export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoId: string; salon: string }> }) {
   const resolvedParams = use(params);
@@ -85,19 +85,20 @@ export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoI
     cargarEvaluacion();
   }, [resolvedParams.juradoId, resolvedParams.salon]);
 
+  const salonId = getClassroomIdByName(resolvedParams.salon);
+  
   const cargarEvaluacion = async () => {
     try {
       setLoading(true);
       setError("");
       
-      const salonId = obtenerSalonIdPorNombre(resolvedParams.salon);
-      
       if (!salonId) {
         setError("Salón no encontrado");
         return;
       }
-
-      const evaluacionData = await obtenerEvaluacionDelDia(resolvedParams.juradoId, salonId);
+      
+      const today = new Date().toISOString().split('T')[0]
+      const evaluacionData = await obtenerEvaluacionDelDia(salonId!, today, resolvedParams.juradoId);
       
       if (evaluacionData) {
         setEvaluacion(evaluacionData);
@@ -105,7 +106,7 @@ export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoI
         // Crear evaluación vacía (normal para primera vez)
         setEvaluacion({
           jurado_id: resolvedParams.juradoId,
-          classroom_id: salonId,
+          classroom_id: salonId!,
           fecha: new Date().toISOString().split('T')[0],
           puntualidad: 0,
           animo_y_barras: 0,
@@ -136,7 +137,7 @@ export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoI
     setError("");
     
     try {
-      const exito = await guardarEvaluacion(evaluacion);
+      const exito = await guardarEvaluacion(salonId!, evaluacion);
       if (exito) {
         setSuccess("Progreso guardado correctamente");
         setTimeout(() => setSuccess(""), 3000);
@@ -164,7 +165,7 @@ export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoI
     setSaving(true);
     
     try {
-      const exito = await guardarEvaluacion(evaluacion);
+      const exito = await guardarEvaluacion(salonId!, evaluacion);
       if (exito) {
         setSuccess("Evaluación completada correctamente");
         setTimeout(() => {

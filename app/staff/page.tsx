@@ -95,8 +95,8 @@ export default function StaffPortalPage() {
                   type="button"
                   variant={selectedRole === "maestro" ? "default" : "outline"}
                   className={`cursor-pointer h-auto p-4 flex flex-col items-center gap-2 ${selectedRole === "maestro"
-                      ? "bg-blue-500 hover:bg-blue-600 text-white"
-                      : "border-accent text-gray-700 hover:bg-accent"
+                    ? "bg-blue-500 hover:bg-blue-600 text-white"
+                    : "border-accent text-gray-700 hover:bg-accent"
                     }`}
                   onClick={() => setSelectedRole("maestro")}
                 >
@@ -108,8 +108,8 @@ export default function StaffPortalPage() {
                   type="button"
                   variant={selectedRole === "jurado" ? "default" : "outline"}
                   className={`cursor-pointer h-auto p-4 flex flex-col items-center gap-2 ${selectedRole === "jurado"
-                      ? "bg-red-500 hover:bg-red-600 text-white"
-                      : "border-accent text-gray-700 hover:bg-accent"
+                    ? "bg-red-500 hover:bg-red-600 text-white"
+                    : "border-accent text-gray-700 hover:bg-accent"
                     }`}
                   onClick={() => setSelectedRole("jurado")}
                 >
@@ -121,8 +121,8 @@ export default function StaffPortalPage() {
                   type="button"
                   variant={selectedRole === "inscripciones" ? "default" : "outline"}
                   className={`cursor-pointer h-auto p-4 flex flex-col items-center gap-2 ${selectedRole === "inscripciones"
-                      ? "bg-purple-500 hover:bg-purple-600 text-white"
-                      : "border-accent text-gray-700 hover:bg-accent"
+                    ? "bg-purple-500 hover:bg-purple-600 text-white"
+                    : "border-accent text-gray-700 hover:bg-accent"
                     }`}
                   onClick={() => setSelectedRole("inscripciones")}
                 >
@@ -134,8 +134,8 @@ export default function StaffPortalPage() {
                   type="button"
                   variant={selectedRole === "admin" ? "default" : "outline"}
                   className={`h-auto cursor-pointer p-4 flex flex-col items-center gap-2 ${selectedRole === "admin"
-                      ? "bg-chart-4/90 hover:bg-chart-4 text-white"
-                      : "border-accent text-gray-700 hover:bg-accent"
+                    ? "bg-chart-4/90 hover:bg-chart-4 text-white"
+                    : "border-accent text-gray-700 hover:bg-accent"
                     }`}
                   onClick={() => setSelectedRole("admin")}
                 >
@@ -211,12 +211,7 @@ export default function StaffPortalPage() {
               )}
 
               {/* Información de credenciales */}
-              <div className="mt-3 pt-3 border-t border-gray-200">
-                <p className="text-xs text-gray-400">
-                  💡 <strong>Acceso personal:</strong> Usa tu DNI + contraseña personal<br />
-                  💡 <strong>Acceso general:</strong> Ingresa solo "ebdv2026" sin DNI
-                </p>
-              </div>
+
             </div>
           </CardContent>
         </Card>
