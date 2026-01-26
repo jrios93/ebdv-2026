@@ -71,11 +71,42 @@ export default function AdminPage() {
     }
   }
 
-  const reloadRef = useRef(() => Promise.resolve())
+  const reloadRef = useRef<() => Promise<any>>(() => Promise.resolve())
   
-  const { data: dashboardData, loading: isLoading, lastUpdate, reload } = useManualLoad(() => {
-    reloadRef.current = () => loadDashboardData()
-    return loadDashboardData()
+  const { data: dashboardData, loading: isLoading, lastUpdate, reload } = useManualLoad(async () => {
+    const loadData = async () => {
+      try {
+        const [statsData, alumnosData, rankingData, invitadosData, salonData, semanalData, invitadosRankingData, campeonData, totalInvitadosData] = await Promise.all([
+          getStatsDashboard(),
+          getTopAlumnosToday(5),
+          getClassroomRankingToday(),
+          getTopInvitadosToday(3),
+          getAlumnosPorSalon(),
+          getResumenSemanal(),
+          getRankingInvitados(7),
+          getCampeonInvitados(7),
+          getTotalInvitadosPeriodo(7)
+        ])
+
+        return {
+          stats: statsData,
+          topAlumnos: alumnosData || [],
+          classroomRanking: rankingData || [],
+          topInvitados: invitadosData || [],
+          alumnosPorSalon: salonData || [],
+          resumenSemanal: semanalData,
+          rankingInvitados: invitadosRankingData || [],
+          campeonInvitadosActual: campeonData,
+          totalInvitadosPeriodo: totalInvitadosData || 0
+        }
+      } catch (error) {
+        console.error('Error loading dashboard:', error)
+        throw error
+      }
+    }
+    
+    reloadRef.current = loadData
+    return await loadData()
   }, true)
   const [isExporting, setIsExporting] = useState(false)
   const [isWeeklyExporting, setIsWeeklyExporting] = useState(false)
@@ -97,11 +128,11 @@ export default function AdminPage() {
               console.log('🔔 Realtime: Cambio detectado en puntuacion_grupal_diaria', payload)
               setRealtimeStatus('connected')
               // Recargar dashboard cuando haya cambios
-              setTimeout(() => {
-                if (reload.current) {
-                  reload.current()
-                }
-              }, 500)
+               setTimeout(async () => {
+                 if (reloadRef.current) {
+                   await reloadRef.current()
+                 }
+               }, 500)
             }
           )
           .subscribe()
@@ -134,16 +165,19 @@ export default function AdminPage() {
           try {
             const channel = supabase
               .channel('admin_dashboard_changes')
-              .on('postgres_changes', (payload: any) => {
-                console.log('🔔 Reconectado: Cambio detectado', payload)
-                setRealtimeStatus('connected')
-                setTimeout(() => {
-                  const reloadFn = reload as any
-                  if (reloadFn) {
-                    reloadFn()
-                  }
-                }, 500)
-              })
+              .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'puntuacion_grupal_diaria' },
+                async (payload: any) => {
+                  console.log('🔔 Reconectado: Cambio detectado', payload)
+                  setRealtimeStatus('connected')
+                  setTimeout(async () => {
+                    if (reloadRef.current) {
+                      await reloadRef.current()
+                    }
+                  }, 500)
+                }
+              )
               .subscribe()
             
             channel?.unsubscribe()
