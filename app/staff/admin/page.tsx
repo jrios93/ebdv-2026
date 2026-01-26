@@ -27,6 +27,7 @@ import { SimpleResetManager } from "@/components/admin/simple-reset-manager"
 import { useManualLoad } from "@/hooks/useManualLoad"
 import { FaBible, FaDove, FaSeedling } from "react-icons/fa"
 import { IoSunnySharp } from "react-icons/io5"
+import { exportarSemanaCompleta } from "@/lib/exports"
 
 interface Stats {
   totalAlumnos: number
@@ -71,6 +72,7 @@ export default function AdminPage() {
 
   const { data: dashboardData, loading: isLoading, lastUpdate, reload } = useManualLoad(loadDashboardData, true)
   const [isExporting, setIsExporting] = useState(false)
+  const [isWeeklyExporting, setIsWeeklyExporting] = useState(false)
 
   // Estados extraídos de los datos cargados
   const stats = dashboardData?.stats || {
@@ -142,6 +144,18 @@ export default function AdminPage() {
       alert('Error al exportar salones')
     } finally {
       setIsExporting(false)
+    }
+  }
+
+  const exportWeeklyData = async (tipo: 'alumnos' | 'salones') => {
+    setIsWeeklyExporting(true)
+    try {
+      await exportarSemanaCompleta(tipo)
+    } catch (error) {
+      console.error('Error en exportación semanal:', error)
+      alert('Error al exportar datos semanales')
+    } finally {
+      setIsWeeklyExporting(false)
     }
   }
 
@@ -474,24 +488,59 @@ export default function AdminPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 gap-3">
-                  <Button
-                    onClick={exportEvaluacionesToExcel}
-                    disabled={isExporting || isLoading}
-                    className="flex items-center gap-2"
-                  >
-                    <Download className="w-4 h-4" />
-                    {isExporting ? 'Exportando...' : 'Evaluaciones de Alumnos (Excel)'}
-                  </Button>
-                  <Button
-                    onClick={exportSalonesToExcel}
-                    disabled={isExporting || isLoading}
-                    variant="outline"
-                    className="flex items-center gap-2 border-border"
-                  >
-                    <Download className="w-4 h-4" />
-                    {isExporting ? 'Exportando...' : 'Evaluaciones de Salones (Excel)'}
-                  </Button>
+                <div className="space-y-4">
+                  {/* Exportación Diaria */}
+                  <div>
+                    <h4 className="text-sm font-medium mb-2 text-muted-foreground">📅 Datos de Hoy</h4>
+                    <div className="grid grid-cols-1 gap-2">
+                      <Button
+                        onClick={exportEvaluacionesToExcel}
+                        disabled={isExporting || isLoading}
+                        className="flex items-center gap-2"
+                        size="sm"
+                      >
+                        <Download className="w-4 h-4" />
+                        {isExporting ? 'Exportando...' : 'Evaluaciones de Alumnos Hoy'}
+                      </Button>
+                      <Button
+                        onClick={exportSalonesToExcel}
+                        disabled={isExporting || isLoading}
+                        variant="outline"
+                        className="flex items-center gap-2 border-border"
+                        size="sm"
+                      >
+                        <Download className="w-4 h-4" />
+                        {isExporting ? 'Exportando...' : 'Evaluaciones de Salones Hoy'}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* Exportación Semanal */}
+                  <div>
+                    <h4 className="text-sm font-medium mb-2 text-muted-foreground">📊 Datos Semanales (Lunes a Domingo)</h4>
+                    <div className="grid grid-cols-1 gap-2">
+                      <Button
+                        onClick={() => exportWeeklyData('alumnos')}
+                        disabled={isWeeklyExporting || isLoading}
+                        variant="outline"
+                        className="flex items-center gap-2 border-green-200 text-green-700 hover:bg-green-50"
+                        size="sm"
+                      >
+                        <Calendar className="w-4 h-4" />
+                        {isWeeklyExporting ? 'Exportando...' : 'Alumnos - Semana Completa'}
+                      </Button>
+                      <Button
+                        onClick={() => exportWeeklyData('salones')}
+                        disabled={isWeeklyExporting || isLoading}
+                        variant="outline"
+                        className="flex items-center gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
+                        size="sm"
+                      >
+                        <TrendingUp className="w-4 h-4" />
+                        {isWeeklyExporting ? 'Exportando...' : 'Salones - Semana Completa'}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
