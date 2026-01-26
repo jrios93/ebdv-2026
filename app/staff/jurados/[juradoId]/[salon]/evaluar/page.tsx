@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeftIcon, ClockIcon, UsersIcon, CheckCircleIcon } from "lucide-react";
-import { obtenerEvaluacionDelDia, guardarEvaluacion, getClassroomIdByName } from "@/lib/juradoService";
+import { obtenerEvaluacionDelDia, guardarEvaluacion, getClassroomIdByName, getClassroomIdByNameOrThrow } from "@/lib/juradoService";
 
 export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoId: string; salon: string }> }) {
   const resolvedParams = use(params);
@@ -85,20 +85,21 @@ export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoI
     cargarEvaluacion();
   }, [resolvedParams.juradoId, resolvedParams.salon]);
 
-  const salonId = getClassroomIdByName(resolvedParams.salon);
-  
   const cargarEvaluacion = async () => {
     try {
       setLoading(true);
       setError("");
       
-      if (!salonId) {
+      let salonId: string;
+      try {
+        salonId = await getClassroomIdByNameOrThrow(resolvedParams.salon);
+      } catch (error) {
         setError("Salón no encontrado");
         return;
       }
       
       const today = new Date().toISOString().split('T')[0]
-      const evaluacionData = await obtenerEvaluacionDelDia(salonId!, today, resolvedParams.juradoId);
+      const evaluacionData = await obtenerEvaluacionDelDia(salonId, today, resolvedParams.juradoId);
       
       if (evaluacionData) {
         setEvaluacion(evaluacionData);
@@ -106,7 +107,7 @@ export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoI
         // Crear evaluación vacía (normal para primera vez)
         setEvaluacion({
           jurado_id: resolvedParams.juradoId,
-          classroom_id: salonId!,
+          classroom_id: salonId,
           fecha: new Date().toISOString().split('T')[0],
           puntualidad: 0,
           animo_y_barras: 0,
@@ -130,14 +131,23 @@ export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoI
     }));
   };
 
-  const guardarProgreso = async () => {
+   const guardarProgreso = async () => {
     if (!evaluacion) return;
     
     setSaving(true);
     setError("");
     
+    // Obtener salonId de nuevo para asegurar que sea válido
+    let currentSalonId: string;
     try {
-      const exito = await guardarEvaluacion(salonId!, evaluacion);
+      currentSalonId = await getClassroomIdByNameOrThrow(resolvedParams.salon);
+    } catch (error) {
+      setError("Salón no encontrado");
+      return;
+    }
+    
+     try {
+      const exito = await guardarEvaluacion(currentSalonId, evaluacion);
       if (exito) {
         setSuccess("Progreso guardado correctamente");
         setTimeout(() => setSuccess(""), 3000);
@@ -164,8 +174,17 @@ export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoI
 
     setSaving(true);
     
-    try {
-      const exito = await guardarEvaluacion(salonId!, evaluacion);
+     try {
+      // Obtener salonId de nuevo para asegurar que sea válido
+      let finalSalonId: string;
+      try {
+        finalSalonId = await getClassroomIdByNameOrThrow(resolvedParams.salon);
+      } catch (error) {
+        setError("Salón no encontrado");
+        return;
+      }
+      
+      const exito = await guardarEvaluacion(finalSalonId, evaluacion);
       if (exito) {
         setSuccess("Evaluación completada correctamente");
         setTimeout(() => {

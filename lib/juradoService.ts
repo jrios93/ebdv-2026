@@ -430,6 +430,14 @@ export async function getClassroomIdByName(nombre: string): Promise<string | nul
   return id || null
 }
 
+export async function getClassroomIdByNameOrThrow(nombre: string): Promise<string> {
+  const id = CLASSROOM_IDS[nombre.toLowerCase()]
+  if (!id) {
+    throw new Error(`Salón "${nombre}" no encontrado`)
+  }
+  return id
+}
+
 export async function getClassNameById(id: string): Promise<string | null> {
   const name = CLASSROOM_NAMES[id]
   return name || null
