@@ -1,9 +1,9 @@
 "use client"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Users, Trophy, Star, Heart, LogOut, Clock, Shield, TrendingUp, Award, UserPlus, Download, Calendar, RotateCcw } from "lucide-react"
+import { Users, Trophy, Star, Heart, LogOut, Clock, Shield, TrendingUp, Award, UserPlus, Download, Calendar, RotateCcw, Wifi } from "lucide-react"
 import { StaffGuard } from "@/components/StaffGuard"
 import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
@@ -17,6 +17,7 @@ import {
   getAlumnosPorSalon,
   getResumenSemanal
 } from "@/lib/supabaseQueries"
+import { supabase } from '@/lib/supabase'
 import {
   getRankingInvitados,
   getCampeonInvitados,
@@ -70,9 +71,126 @@ export default function AdminPage() {
     }
   }
 
-  const { data: dashboardData, loading: isLoading, lastUpdate, reload } = useManualLoad(loadDashboardData, true)
+  const reloadRef = useRef<() => Promise<any>>(() => Promise.resolve())
+  
+  const { data: dashboardData, loading: isLoading, lastUpdate, reload } = useManualLoad(async () => {
+    const loadData = async () => {
+      try {
+        const [statsData, alumnosData, rankingData, invitadosData, salonData, semanalData, invitadosRankingData, campeonData, totalInvitadosData] = await Promise.all([
+          getStatsDashboard(),
+          getTopAlumnosToday(5),
+          getClassroomRankingToday(),
+          getTopInvitadosToday(3),
+          getAlumnosPorSalon(),
+          getResumenSemanal(),
+          getRankingInvitados(7),
+          getCampeonInvitados(7),
+          getTotalInvitadosPeriodo(7)
+        ])
+
+        return {
+          stats: statsData,
+          topAlumnos: alumnosData || [],
+          classroomRanking: rankingData || [],
+          topInvitados: invitadosData || [],
+          alumnosPorSalon: salonData || [],
+          resumenSemanal: semanalData,
+          rankingInvitados: invitadosRankingData || [],
+          campeonInvitadosActual: campeonData,
+          totalInvitadosPeriodo: totalInvitadosData || 0
+        }
+      } catch (error) {
+        console.error('Error loading dashboard:', error)
+        throw error
+      }
+    }
+    
+    reloadRef.current = loadData
+    return await loadData()
+  }, true)
   const [isExporting, setIsExporting] = useState(false)
   const [isWeeklyExporting, setIsWeeklyExporting] = useState(false)
+  const [realtimeStatus, setRealtimeStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connecting')
+
+  // Efecto para manejar realtime de Supabase
+  useEffect(() => {
+    let subscription: any = null
+
+    const setupRealtime = async () => {
+      try {
+        setRealtimeStatus('connecting')
+        const channel = supabase
+          .channel('admin_dashboard_changes')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'puntuacion_grupal_diaria' },
+            (payload: any) => {
+              console.log('🔔 Realtime: Cambio detectado en puntuacion_grupal_diaria', payload)
+              setRealtimeStatus('connected')
+              // Recargar dashboard cuando haya cambios
+               setTimeout(async () => {
+                 if (reloadRef.current) {
+                   await reloadRef.current()
+                 }
+               }, 500)
+            }
+          )
+          .subscribe()
+
+        return channel
+      } catch (error) {
+        console.error('❌ Error en suscripción realtime:', error)
+        setRealtimeStatus('disconnected')
+      }
+    }
+
+    setupRealtime().then(channel => {
+      subscription = channel
+    })
+
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe()
+        setRealtimeStatus('disconnected')
+      }
+    }
+  }, [reload])
+
+        // Efecto para mostrar estado de conexión en tiempo real
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (realtimeStatus === 'disconnected') {
+        // Intentar reconectar
+        const setupRealtime = async () => {
+          try {
+            const channel = supabase
+              .channel('admin_dashboard_changes')
+              .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'puntuacion_grupal_diaria' },
+                async (payload: any) => {
+                  console.log('🔔 Reconectado: Cambio detectado', payload)
+                  setRealtimeStatus('connected')
+                  setTimeout(async () => {
+                    if (reloadRef.current) {
+                      await reloadRef.current()
+                    }
+                  }, 500)
+                }
+              )
+              .subscribe()
+            
+            channel?.unsubscribe()
+          } catch (error) {
+            console.log('❌ Error al reconectar, intentando en 5 segundos...')
+          }
+        }
+        setupRealtime()
+      }
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [realtimeStatus, reload])
 
   // Estados extraídos de los datos cargados
   const stats = dashboardData?.stats || {
@@ -449,15 +567,25 @@ export default function AdminPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {/* Botón de administración de alumnos */}
-                  <Link href="/staff/admin/alumnos">
-                    <Card className="cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-lg border border-blue-200 bg-blue-50">
-                      <CardContent className="p-3 text-center">
-                        <Users className="w-6 h-6 mx-auto mb-2 text-blue-600" />
-                        <p className="text-xs font-medium text-blue-900">Admin Alumnos</p>
-                      </CardContent>
-                    </Card>
-                  </Link>
+                   {/* Botón de administración de alumnos */}
+                   <Link href="/staff/admin/alumnos">
+                     <Card className="cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-lg border border-blue-200 bg-blue-50">
+                       <CardContent className="p-3 text-center">
+                         <Users className="w-6 h-6 mx-auto mb-2 text-blue-600" />
+                         <p className="text-xs font-medium text-blue-900">Admin Alumnos</p>
+                       </CardContent>
+                     </Card>
+                   </Link>
+
+                   {/* Botón de inscripciones en tiempo real */}
+                   <Link href="/staff/admin/inscripciones">
+                     <Card className="cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-lg border border-green-200 bg-green-50">
+                       <CardContent className="p-3 text-center">
+                         <UserPlus className="w-6 h-6 mx-auto mb-2 text-green-600" />
+                         <p className="text-xs font-medium text-green-900">Inscripciones</p>
+                       </CardContent>
+                     </Card>
+                   </Link>
 
                   {classrooms.map((classroom) => {
                     const IconComponent = classroom.icon

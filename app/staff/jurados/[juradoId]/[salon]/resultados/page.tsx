@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeftIcon, DownloadIcon, CheckCircleIcon } from "lucide-react";
-import { obtenerEvaluacionesPorSalon } from "@/lib/juradoService";
+import { obtenerEvaluacionesPorSalon, getClassroomIdByName, getClassroomIdByNameOrThrow } from "@/lib/juradoService";
 
 export default function ResultadosSalonPage({ params }: { params: Promise<{ juradoId: string; salon: string }> }) {
   const resolvedParams = use(params);
@@ -16,23 +16,20 @@ export default function ResultadosSalonPage({ params }: { params: Promise<{ jura
   const [error, setError] = useState("");
   const router = useRouter();
 
-  useEffect(() => {
-    cargarResultados();
-  }, [resolvedParams.juradoId, resolvedParams.salon]);
-
   const cargarResultados = async () => {
     try {
       setLoading(true);
       setError("");
       
-      const salonId = obtenerSalonIdPorNombre(resolvedParams.salon);
-      
-      if (!salonId) {
+      let salonId: string;
+      try {
+        salonId = await getClassroomIdByNameOrThrow(resolvedParams.salon);
+      } catch (error) {
         setError("Salón no encontrado");
         return;
       }
-
-      const evaluacionesData = await obtenerEvaluacionesPorSalon(salonId);
+      
+        const evaluacionesData = await obtenerEvaluacionesPorSalon(salonId);
       setEvaluaciones(evaluacionesData);
     } catch (error) {
       console.error('Error al cargar resultados:', error);
