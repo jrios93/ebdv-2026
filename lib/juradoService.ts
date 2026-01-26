@@ -164,6 +164,93 @@ export async function obtenerSalonPorId(id: string): Promise<Salon | null> {
   }
 }
 
+// ====== EVALUACIONES INDIVIDUALES ======
+
+export async function obtenerEvaluacionDelDia(
+  salonId: string,
+  fecha: string,
+  juradoId: string
+): Promise<PuntuacionGrupal | null> {
+  try {
+    const { data, error } = await supabase
+      .from('puntuacion_grupal_diaria')
+      .select('*')
+      .eq('classroom_id', salonId)
+      .eq('fecha', fecha)
+      .eq('jurado_registro_id', juradoId)
+      .single();
+
+    if (error) {
+      console.error('Error al obtener evaluación del día:', error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error al obtener evaluación del día:', error);
+    return null;
+  }
+}
+
+export async function guardarEvaluacion(
+  salonId: string,
+  evaluacion: Omit<PuntuacionGrupal, 'id' | 'creado_en' | 'actualizado_en' | 'classroom_id'> & { jurado_registro_id: string }
+): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('puntuacion_grupal_diaria')
+      .upsert({
+        ...evaluacion,
+        classroom_id: salonId,
+        actualizado_en: new Date().toISOString()
+      }, {
+        onConflict: 'classroom_id,fecha,jurado_registro_id'
+      });
+
+    if (error) {
+      console.error('Error al guardar evaluación:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error al guardar evaluación:', error);
+    return false;
+  }
+}
+
+export async function obtenerEvaluacionesPorSalon(
+  salonId: string,
+  fecha?: string
+): Promise<PuntuacionGrupal[]> {
+  try {
+    let query = supabase
+      .from('puntuacion_grupal_diaria')
+      .select(`
+        *,
+        maestros!jurado_registro_id(nombre)
+      `)
+      .eq('classroom_id', salonId)
+      .order('fecha', { ascending: false });
+
+    if (fecha) {
+      query = query.eq('fecha', fecha);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error al obtener evaluaciones por salón:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error al obtener evaluaciones por salón:', error);
+    return [];
+  }
+}
+
 // ====== EVALUACIONES GRUPALES ======
 
 export async function crearPuntuacionGrupal(puntuacion: Omit<PuntuacionGrupal, 'id' | 'creado_en' | 'actualizado_en'>): Promise<boolean> {
