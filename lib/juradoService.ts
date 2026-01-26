@@ -1,93 +1,80 @@
 import { supabase } from './supabase';
 
-// Tipos para la base de datos
 export interface Jurado {
   id: string;
-  nombre: string;
   dni: string;
-  rol: string;
+  nombre: string;
+  email?: string;
+  telefono?: string;
+  rol: 'maestro' | 'jurado' | 'admin';
   activo: boolean;
-  creado_en?: string;
+  creado_en: string;
 }
 
 export interface Salon {
   id: string;
   nombre: string;
+  descripcion?: string;
   edad_min: number;
   edad_max: number;
   color: string;
   activo: boolean;
-  creado_en?: string;
 }
 
-export interface Alumno {
-  id: string;
-  nombre: string;
-  apellidos: string;
-  edad: number;
-  genero: 'niño' | 'niña';
-  nombre_padre: string;
-  telefono: string;
-  telefono_niño?: string;
-  classroom_id: string;
-  classroom_forzado_id?: string;
-  activo: boolean;
-  fecha_inscripcion: string;
-}
-
-export interface Evaluacion {
+export interface PuntuacionGrupal {
   id: string;
   classroom_id: string;
   fecha: string;
-  jurado_id: string;
   puntualidad: number;
   animo_y_barras: number;
   orden: number;
   verso_memoria: number;
   preguntas_correctas: number;
   preguntas: number;
+  jurado_registro_id?: string;
   creado_en: string;
   actualizado_en: string;
 }
 
-export interface SalonConEstado extends Salon {
-  estado: 'pendiente' | 'en_evaluacion' | 'completado';
-  total_jurados: number;
-  jurados_evaluaron: number;
-  promedio_puntaje?: number;
-  ultima_actualizacion?: string;
-}
-
-// ====== AUTENTICACIÓN DE JURADOS ======
+// ====== AUTENTICACIÓN JURADO ======
 
 export async function autenticarJurado(codigo: string, password: string): Promise<Jurado | null> {
   try {
-    // Por ahora, usaremos DNI como código y una contraseña simple
-    // TODO: Implementar un sistema de autenticación más robusto
-    
-    // Buscar jurado por DNI (usando código como DNI)
-    const { data, error } = await supabase
-      .from('maestros')
-      .select('*')
-      .eq('dni', codigo)
-      .eq('rol', 'jurado')
-      .eq('activo', true)
-      .single();
-
-    if (error || !data) {
-      console.error('Error al buscar jurado:', error);
-      return null;
-    }
-
-    // Validación simple de contraseña (temporal)
+    // Validar contraseñas directamente sin buscar en DB (modo frontend-only)
     const contraseñasValidas = {
-      '12345678': 'emilio123',   // Emilio Catay
-      '87654321': 'eliseo123',  // Eliseo Maldonado  
-      '11223344': 'pierre123'    // Pierre Vivanco
+      '19837455': { 
+        password: 'emilio123', 
+        nombre: 'Emilio Catay',
+        dni: '19837455',
+        rol: 'jurado' as const,
+        activo: true,
+        id: 'temp-id-1',
+        creado_en: new Date().toISOString()
+      },
+      '43160277': { 
+        password: 'eliseo123', 
+        nombre: 'Eliseo Maldonado',
+        dni: '43160277', 
+        rol: 'jurado' as const,
+        activo: true,
+        id: 'temp-id-2',
+        creado_en: new Date().toISOString()
+      },
+      '45476174': { 
+        password: 'pierre123', 
+        nombre: 'Pierre Vivanco',
+        dni: '45476174',
+        rol: 'jurado' as const,
+        activo: true, 
+        id: 'temp-id-3',
+        creado_en: new Date().toISOString()
+      }
     };
 
-    if (contraseñasValidas[data.dni as keyof typeof contraseñasValidas] === password) {
-      return data as Jurado;
+    const juradoData = contraseñasValidas[codigo as keyof typeof contraseñasValidas];
+    
+    if (juradoData && juradoData.password === password) {
+      return juradoData as Jurado;
     }
 
     return null;
@@ -98,6 +85,44 @@ export async function autenticarJurado(codigo: string, password: string): Promis
 }
 
 // ====== SALONES ======
+
+export async function obtenerSalonesConEstado(fecha?: string): Promise<Array<Salon & { estado: "pendiente" | "en_evaluacion" | "completado", total_jurados: number }>> {
+  try {
+    // Primero obtener todos los salones base
+    const salones = await obtenerSalones();
+    const today = fecha || new Date().toISOString().split('T')[0];
+    
+    // Obtener evaluaciones del día para cada salón
+    const { data: evaluaciones } = await supabase
+      .from('puntuacion_grupal_diaria')
+      .select('classroom_id, created_at')
+      .eq('fecha', today);
+    
+    return salones.map(salon => {
+      const evaluacionHoy = evaluaciones?.find(e => e.classroom_id === salon.id);
+      
+      let estado: "pendiente" | "en_evaluacion" | "completado" = "pendiente";
+      
+      if (evaluacionHoy) {
+        // Si tiene evaluación hoy, está completado (suponemos que la evaluación es rápida)
+        estado = "completado";
+      } else {
+        // Podrías agregar lógica aquí para determinar si está en evaluación
+        // Por ahora, si no tiene evaluación y es el día actual, está pendiente
+        estado = "pendiente";
+      }
+      
+      return {
+        ...salon,
+        estado,
+        total_jurados: 3 // Número fijo de jurados por evaluación
+      };
+    });
+  } catch (error) {
+    console.error('Error al obtener salones con estado:', error);
+    return [];
+  }
+}
 
 export async function obtenerSalones(): Promise<Salon[]> {
   try {
@@ -112,222 +137,213 @@ export async function obtenerSalones(): Promise<Salon[]> {
       return [];
     }
 
-    return data as Salon[];
+    return data || [];
   } catch (error) {
     console.error('Error al obtener salones:', error);
     return [];
   }
 }
 
-export async function obtenerSalonesConEstado(juradoId?: string): Promise<SalonConEstado[]> {
-  try {
-    const hoy = new Date().toISOString().split('T')[0];
-
-    // Obtener salones básicos
-    const salones = await obtenerSalones();
-
-    // Para cada salón, obtener su estado de evaluación
-    const salonesConEstado = await Promise.all(
-      salones.map(async (salon) => {
-        // Obtener evaluaciones de hoy para este salón
-        const { data: evaluaciones, error } = await supabase
-          .from('puntuacion_grupal_diaria')
-          .select('*')
-          .eq('classroom_id', salon.id)
-          .eq('fecha', hoy);
-
-        if (error) {
-          console.error(`Error al obtener evaluaciones del salón ${salon.nombre}:`, error);
-          return {
-            ...salon,
-            estado: 'pendiente' as const,
-            total_jurados: 0,
-            jurados_evaluaron: 0
-          };
-        }
-
-        const totalEvaluaciones = evaluaciones?.length || 0;
-        const estado: 'pendiente' | 'en_evaluacion' | 'completado' = 
-          totalEvaluaciones >= 3 ? 'completado' : 
-          totalEvaluaciones > 0 ? 'en_evaluacion' : 'pendiente';
-
-        // Calcular promedio si hay evaluaciones
-        const promedioPuntaje = evaluaciones && evaluaciones.length > 0 
-          ? evaluaciones.reduce((sum, evaluation) => sum + 
-              (evaluation.puntualidad || 0) + 
-              (evaluation.animo_y_barras || 0) + 
-              (evaluation.orden || 0) + 
-              (evaluation.verso_memoria || 0) + 
-              (evaluation.preguntas_correctas || 0), 0) / evaluaciones.length
-          : 0;
-
-        return {
-          ...salon,
-          estado,
-          total_jurados: 3, // Total de jurados esperados
-          jurados_evaluaron: totalEvaluaciones,
-          promedio_puntaje: promedioPuntaje,
-          ultima_actualizacion: evaluaciones && evaluaciones.length > 0 
-            ? Math.max(...evaluaciones.map(e => new Date(e.actualizado_en).getTime())).toString()
-            : undefined
-        };
-      })
-    );
-
-    return salonesConEstado;
-  } catch (error) {
-    console.error('Error al obtener salones con estado:', error);
-    return [];
-  }
-}
-
-// ====== ALUMNOS ======
-
-export async function obtenerAlumnosPorSalon(salonId: string): Promise<Alumno[]> {
+export async function obtenerSalonPorId(id: string): Promise<Salon | null> {
   try {
     const { data, error } = await supabase
-      .from('alumnos')
+      .from('classrooms')
       .select('*')
-      .eq('classroom_id', salonId)
-      .eq('activo', true)
-      .order('nombre');
+      .eq('id', id)
+      .single();
 
     if (error) {
-      console.error('Error al obtener alumnos:', error);
-      return [];
-    }
-
-    return data as Alumno[];
-  } catch (error) {
-    console.error('Error al obtener alumnos:', error);
-    return [];
-  }
-}
-
-// ====== EVALUACIONES ======
-
-export async function obtenerEvaluacionDelDia(juradoId: string, salonId: string): Promise<Evaluacion | null> {
-  try {
-    const hoy = new Date().toISOString().split('T')[0];
-
-    const { data, error } = await supabase
-      .from('puntuacion_grupal_diaria')
-      .select('*')
-      .eq('jurado_id', juradoId)
-      .eq('classroom_id', salonId)
-      .eq('fecha', hoy)
-      .maybeSingle(); // Cambiar a maybeSingle para manejar casos vacíos
-
-    // Ignorar errores de "no encontrado" - es normal cuando no hay evaluación previa
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error al obtener evaluación:', error);
+      console.error('Error al obtener salón:', error);
       return null;
     }
 
-    return data as Evaluacion;
+    return data;
   } catch (error) {
-    console.error('Error al obtener evaluación:', error);
+    console.error('Error al obtener salón:', error);
     return null;
   }
 }
 
-export async function guardarEvaluacion(evaluacion: Partial<Evaluacion>): Promise<boolean> {
+// ====== EVALUACIONES GRUPALES ======
+
+export async function crearPuntuacionGrupal(puntuacion: Omit<PuntuacionGrupal, 'id' | 'creado_en' | 'actualizado_en'>): Promise<boolean> {
   try {
-    // Remover el campo 'preguntas' porque es auto-generado en SQL
-    const { preguntas, ...evaluacionSinPreguntas } = evaluacion as any;
-    
     const { error } = await supabase
       .from('puntuacion_grupal_diaria')
-      .upsert({
-        ...evaluacionSinPreguntas,
-        actualizado_en: new Date().toISOString()
-      }, {
-        onConflict: 'classroom_id,fecha,jurado_id',
-        ignoreDuplicates: false
-      });
+      .insert(puntuacion);
 
     if (error) {
-      console.error('Error al guardar evaluación:', error);
+      console.error('Error al crear puntuación grupal:', error);
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error('Error al guardar evaluación:', error);
+    console.error('Error al crear puntuación grupal:', error);
     return false;
   }
 }
 
-export async function obtenerEvaluacionesPorSalon(salonId: string, fecha?: string): Promise<Evaluacion[]> {
+export async function actualizarPuntuacionGrupal(
+  id: string,
+  puntuacion: Partial<PuntuacionGrupal>
+): Promise<boolean> {
   try {
-    const fechaConsulta = fecha || new Date().toISOString().split('T')[0];
-
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('puntuacion_grupal_diaria')
-      .select(`
-        *,
-        maestros!inner (nombre, rol)
-      `)
-      .eq('classroom_id', salonId)
-      .eq('fecha', fechaConsulta);
+      .update({
+        ...puntuacion,
+        actualizado_en: new Date().toISOString()
+      })
+      .eq('id', id);
 
     if (error) {
-      console.error('Error al obtener evaluaciones:', error);
+      console.error('Error al actualizar puntuación grupal:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error al actualizar puntuación grupal:', error);
+    return false;
+  }
+}
+
+export async function obtenerPuntuacionGrupalPorFecha(
+  fecha: string,
+  classroom_id?: string
+): Promise<PuntuacionGrupal[]> {
+  try {
+    let query = supabase
+      .from('puntuacion_grupal_diaria')
+      .select('*')
+      .eq('fecha', fecha)
+      .order('creado_en', { ascending: false });
+
+    if (classroom_id) {
+      query = query.eq('classroom_id', classroom_id);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error al obtener puntuaciones grupales:', error);
       return [];
     }
 
-    return data as Evaluacion[];
+    return data || [];
   } catch (error) {
-    console.error('Error al obtener evaluaciones:', error);
+    console.error('Error al obtener puntuaciones grupales:', error);
     return [];
   }
 }
 
-// ====== UTILIDADES ======
+export async function obtenerPuntuacionGrupalPorId(id: string): Promise<PuntuacionGrupal | null> {
+  try {
+    const { data, error } = await supabase
+      .from('puntuacion_grupal_diaria')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-export function obtenerInformacionSalon(salonId: string): {
-  nombre: string;
-  color: string;
-  edadRango: string;
-  descripcion: string;
-} | null {
-  const info = {
-    '5272477b-26a4-4179-a276-1c4730238974': {
-      nombre: 'Verdad',
-      color: 'blue',
-      edadRango: '13-15 años',
-      descripcion: 'Adolescentes'
-    },
-    '9b8a58b3-6356-4b75-b28b-d5f5d8e596fd': {
-      nombre: 'Gracia', 
-      color: 'red',
-      edadRango: '10-12 años',
-      descripcion: 'Primarios'
-    },
-    'd863c43d-9b83-494a-a88b-c3973a31bfd7': {
-      nombre: 'Luz',
-      color: 'yellow', 
-      edadRango: '6-9 años',
-      descripcion: 'Principiantes'
-    },
-    'eda65bd9-dadd-4f74-954e-b952a91845a3': {
-      nombre: 'Vida',
-      color: 'green',
-      edadRango: '3-5 años', 
-      descripcion: 'Párvulos'
+    if (error) {
+      console.error('Error al obtener puntuación grupal:', error);
+      return null;
     }
-  };
 
-  return info[salonId as keyof typeof info] || null;
+    return data;
+  } catch (error) {
+    console.error('Error al obtener puntuación grupal:', error);
+    return null;
+  }
 }
 
-export function getSalonIdPorNombre(nombre: string): string | null {
-  const nombreToId = {
-    'verdad': '5272477b-26a4-4179-a276-1c4730238974',
-    'gracia': '9b8a58b3-6356-4b75-b28b-d5f5d8e596fd', 
-    'luz': 'd863c43d-9b83-494a-a88b-c3973a31bfd7',
-    'vida': 'eda65bd9-dadd-4f74-954e-b952a91845a3'
-  };
+// ====== ESTADÍSTICAS ======
 
-  return nombreToId[nombre.toLowerCase() as keyof typeof nombreToId] || null;
+export async function obtenerRankingDeSalones(fecha?: string): Promise<Array<{
+  salon: string;
+  total_puntos: number;
+  evaluaciones: number;
+}> | null> {
+  try {
+    let query = supabase
+      .from('puntuacion_grupal_diaria')
+      .select(`
+        classrooms!inner(nombre),
+        puntualidad,
+        animo_y_barras,
+        orden,
+        verso_memoria,
+        preguntas_correctas,
+        preguntas,
+        fecha
+      `);
+
+    if (fecha) {
+      query = query.eq('fecha', fecha);
+    }
+
+    const { data, error } = await query.order('fecha', { ascending: false });
+
+    if (error) {
+      console.error('Error al obtener ranking:', error);
+      return null;
+    }
+
+    if (!data || data.length === 0) {
+      return null;
+    }
+
+    // Agrupar por salón y calcular totales
+    const ranking = data.reduce((acc: any, item: any) => {
+      const salon = item.classrooms.nombre;
+      const total = item.puntualidad + item.animo_y_barras + item.orden + 
+                   item.verso_memoria + item.preguntas;
+
+      if (!acc[salon]) {
+        acc[salon] = { total_puntos: 0, evaluaciones: 0 };
+      }
+
+      acc[salon].total_puntos += total;
+      acc[salon].evaluaciones += 1;
+
+      return acc;
+    }, {});
+
+    return Object.entries(ranking).map(([salon, stats]: [string, any]) => ({
+      salon,
+      total_puntos: stats.total_puntos,
+      evaluaciones: stats.evaluaciones
+    })).sort((a, b) => b.total_puntos - a.total_puntos);
+
+  } catch (error) {
+    console.error('Error al obtener ranking:', error);
+    return null;
+  }
+}
+
+// Mapa de IDs de classrooms a nombres (para consistencia)
+export const CLASSROOM_IDS: Record<string, string> = {
+  'vida': 'eda65bd9-dadd-4f74-954e-b952a91845a3',
+  'luz': 'd863c43d-9b83-494a-a88b-c3973a31bfd7', 
+  'gracia': '9b8a58b3-6356-4b75-b28b-d5f5d8e596fd',
+  'verdad': '5272477b-26a4-4179-a276-1c4730238974'
+};
+
+// Mapa inverso de nombres a IDs
+export const CLASSROOM_NAMES: Record<string, string> = {
+  'eda65bd9-dadd-4f74-954e-b952a91845a3': 'vida',
+  'd863c43d-9b83-494a-a88b-c3973a31bfd7': 'luz',
+  '9b8a58b3-6356-4b75-b28b-d5f5d8e596fd': 'gracia', 
+  '5272477b-26a4-4179-a276-1c4730238974': 'verdad'
+};
+
+export async function getClassroomIdByName(nombre: string): Promise<string | null> {
+  const id = CLASSROOM_IDS[nombre.toLowerCase()]
+  return id || null
+}
+
+export async function getClassNameById(id: string): Promise<string | null> {
+  const name = CLASSROOM_NAMES[id]
+  return name || null
 }

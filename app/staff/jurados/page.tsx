@@ -118,12 +118,7 @@ export default function JuradoLoginPage() {
                   )}
                 </Button>
               </div>
-              <p className="text-sm text-gray-600 font-medium mt-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded">
-                💡 <strong>Credenciales de prueba:</strong><br/>
-                • Emilio Catay: DNI 12345678, contraseña emilio123<br/>
-                • Eliseo Maldonado: DNI 87654321, contraseña eliseo123<br/>
-                • Pierre Vivanco: DNI 11223344, contraseña pierre123
-              </p>
+
             </div>
           </CardContent>
 
