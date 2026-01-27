@@ -452,47 +452,83 @@ function AlumnosList({
                 <div className="flex items-start justify-between ml-3">
                   <div className="flex-1">
                     {/* Header con nombre y acciones */}
-                    <div className="flex flex-col md:flex-row items-center gap-2 mb-3">
-                      <div className="flex items-start sm:items-center gap-3 flex-1 w-full">
+                    <div className="space-y-3 mb-3">
+                      {/* Fila principal: icono, nombre y botón de editar */}
+                      <div className="flex items-start gap-3">
                         {/* Icono del salón */}
                         {classroomInfo && (
-                          <div className={`p-2 ${classroomInfo.bgColor} rounded-lg border ${classroomInfo.borderColor}`}>
+                          <div className={`p-2 ${classroomInfo.bgColor} rounded-lg border ${classroomInfo.borderColor} flex-shrink-0`}>
                             <ClassroomIcon className={`w-5 h-5 ${classroomInfo.textColor}`} />
                           </div>
                         )}
 
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           {isEditing ? (
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                            <div className="flex flex-col sm:flex-row items-start gap-2">
                               <Input
                                 value={editForm.nombre}
                                 onChange={(e) => onEditChange('nombre', e.target.value)}
-                                className="w-full sm:w-40 h-10 text-base"
+                                className="w-full h-10 text-base"
                                 placeholder="Nombre"
                               />
                               <Input
                                 value={editForm.apellidos}
                                 onChange={(e) => onEditChange('apellidos', e.target.value)}
-                                className="w-full sm:w-48 h-10 text-base"
+                                className="w-full h-10 text-base"
                                 placeholder="Apellidos"
                               />
                             </div>
                           ) : (
-                            <span className="font-semibold text-lg sm:text-xl text-gray-900">
+                            <span className="font-semibold text-lg sm:text-xl text-gray-900 block">
                               {alumno.nombre} {alumno.apellidos}
                             </span>
                           )}
                         </div>
+
+                        {/* Botones de acción siempre visibles */}
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          {isEditing ? (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="default"
+                                onClick={onSaveAlumno}
+                                className="h-8 px-2 min-h-[32px]"
+                              >
+                                <Save className="w-3 h-3 mr-1" />
+                                <span className="hidden sm:inline">Guardar</span>
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={onCancelEdit}
+                                className="h-8 px-2 min-h-[32px]"
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => onEditAlumno(alumno)}
+                              className="h-8 px-2 min-h-[32px]"
+                            >
+                              <Edit2 className="w-3 h-3 mr-1" />
+                              <span className="hidden sm:inline">Editar</span>
+                            </Button>
+                          )}
+                        </div>
                       </div>
 
-                      <div className="flex  items-center gap-2">
-
-                        <Badge variant="secondary" className="text-sm px-3 py-2 h-auto min-h-[36px]">
+                      {/* Segunda fila: badges informativos */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="secondary" className="text-xs px-2 py-1 h-auto min-h-[28px]">
                           {isEditing ? (
                             <select
                               value={editForm.edad}
                               onChange={(e) => onEditChange('edad', parseInt(e.target.value))}
-                              className="bg-transparent border-none outline-none text-sm font-medium"
+                              className="bg-transparent border-none outline-none text-xs font-medium"
                             >
                               {[...Array(13)].map((_, i) => {
                                 const age = i + 3
@@ -506,12 +542,12 @@ function AlumnosList({
                           )}
                         </Badge>
 
-                        <Badge variant="outline" className="text-sm px-3 py-2 h-auto min-h-[36px]">
+                        <Badge variant="outline" className="text-xs px-2 py-1 h-auto min-h-[28px]">
                           {isEditing ? (
                             <select
                               value={editForm.genero}
                               onChange={(e) => onEditChange('genero', e.target.value)}
-                              className="bg-transparent border-none outline-none text-sm font-medium"
+                              className="bg-transparent border-none outline-none text-xs font-medium"
                             >
                               <option value="niño">Niño</option>
                               <option value="niña">Niña</option>
@@ -522,54 +558,18 @@ function AlumnosList({
                         </Badge>
 
                         {alumno.classroom_forzado_id && (
-                          <Badge variant="destructive" className="text-sm px-3 py-2 h-auto min-h-[36px]">
+                          <Badge variant="destructive" className="text-xs px-2 py-1 h-auto min-h-[28px]">
                             Forzado
                           </Badge>
                         )}
 
                         <Badge
                           variant={asistencia.status === 'asistio' ? 'default' : 'outline'}
-                          className={`text-sm px-3 py-2 h-auto min-h-[36px] ${asistencia.status === 'asistio' ? 'bg-green-100 text-green-700 border-green-300' : ''}`}
+                          className={`text-xs px-2 py-1 h-auto min-h-[28px] ${asistencia.status === 'asistio' ? 'bg-green-100 text-green-700 border-green-300' : ''}`}
                         >
-                          <IconComponent className={`w-4 h-4 mr-1 ${asistencia.color}`} />
+                          <IconComponent className={`w-3 h-3 mr-1 ${asistencia.color}`} />
                           {asistencia.label}
                         </Badge>
-
-                      </div>
-
-                      {/* Botones de acción */}
-                      <div className="flex items-center gap-1 ml-auto">
-                        {isEditing ? (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="default"
-                              onClick={onSaveAlumno}
-                              className="h-8 px-2"
-                            >
-                              <Save className="w-3 h-3 mr-1" />
-                              Guardar
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={onCancelEdit}
-                              className="h-8 px-2"
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          </>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => onEditAlumno(alumno)}
-                            className="h-8 px-2"
-                          >
-                            <Edit2 className="w-3 h-3 mr-1" />
-                            Editar
-                          </Button>
-                        )}
                       </div>
                     </div>
 
