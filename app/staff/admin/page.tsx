@@ -418,37 +418,46 @@ export default function AdminPage() {
                         const isFirstInClassroom = index === 0 ||
                           (index > 0 && resumenSemanal.rankingAlumnos[index - 1].alumno.classroom_id !== item.alumno.classroom_id)
 
-                        return (
-                          <div key={item.alumno.id} className={`relative rounded-lg p-3 transition-all ${isFirstInClassroom
-                            ? 'bg-gradient-to-r from-yellow-100 to-orange-100 border-2 border-yellow-300 shadow-sm'
-                            : 'bg-white/70'
-                            }`}>
-                            {isFirstInClassroom && (
-                              <div className="absolute -top-2 -right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full font-bold">
-                                🏆
-                              </div>
-                            )}
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold shadow ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-orange-500' :
-                                  index === 1 ? 'bg-gray-400' :
-                                    index === 2 ? 'bg-orange-600' : 'bg-gray-300'
-                                  }`}>
-                                  {item.posicion}
-                                </div>
-                                <div>
-                                  <p className="font-semibold text-sm">{item.alumno.nombre} {item.alumno.apellidos}</p>
-                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <span>{item.totalPuntos} pts</span>
-                                    {item.totalInvitados > 0 && (
-                                      <span className="text-green-600">👥 {item.totalInvitados}</span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )
+                         const salonNombre = (item.alumno as any).classrooms?.nombre || 'sin-salon'
+                         const classroom = classrooms.find(c => c.name === salonNombre)
+                         const salonColor = classroom?.color || "bg-gray-100 text-gray-700 border-gray-300"
+
+                         return (
+                           <div key={item.alumno.id} className={`relative rounded-lg p-3 transition-all ${index === 0
+                             ? 'bg-gradient-to-r from-yellow-100 to-orange-100 border-2 border-yellow-300 shadow-sm'
+                             : 'bg-white/70'
+                             }`}>
+                             <div className="absolute -top-2 left-2">
+                               <span className={`text-xs px-2 py-1 rounded-full font-bold ${salonColor}`}>
+                                 {salonNombre}
+                               </span>
+                             </div>
+                             {index === 0 && (
+                               <div className="absolute -top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                                 🏆
+                               </div>
+                             )}
+                             <div className="flex items-center justify-between mt-3">
+                               <div className="flex items-center gap-3">
+                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold shadow ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-orange-500' :
+                                   index === 1 ? 'bg-gray-400' :
+                                     index === 2 ? 'bg-orange-600' : 'bg-gray-300'
+                                   }`}>
+                                   {item.posicion}
+                                 </div>
+                                 <div>
+                                   <p className="font-semibold text-sm">{item.alumno.nombre} {item.alumno.apellidos}</p>
+                                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                     <span>{item.totalPuntos} pts</span>
+                                     {item.totalInvitados > 0 && (
+                                       <span className="text-green-600">👥 {item.totalInvitados}</span>
+                                     )}
+                                   </div>
+                                 </div>
+                               </div>
+                             </div>
+                           </div>
+                         )
                       })}
                     </div>
                   ) : (
@@ -463,18 +472,18 @@ export default function AdminPage() {
               {/* Ranking Salones Semanal */}
               <Card className="border-border bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 shadow-lg">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="w-6 h-6 text-green-600" />
-                    Ranking de Salones
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Puntos grupales</span>
-                  </CardTitle>
+                   <CardTitle className="flex items-center gap-2">
+                     <TrendingUp className="w-6 h-6 text-green-600" />
+                     Ranking de Salones
+                     <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Por promedio</span>
+                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {isLoading ? (
                     <div className="text-center py-8">Cargando ranking...</div>
-                  ) : resumenSemanal.rankingSalones.length > 0 ? (
+                   ) : resumenSemanal.rankingSalones.length > 0 ? (
                     <div className="space-y-3">
-                      {resumenSemanal.rankingSalones.map((salon, index) => {
+                      {resumenSemanal.rankingSalones.map((salon: any, index) => {
                         const classroom = classrooms.find(c => c.name === salon.salon.toLowerCase())
                         const IconComponent = classroom?.icon || TrendingUp
 
@@ -489,10 +498,11 @@ export default function AdminPage() {
                                 {salon.posicion}
                               </div>
                               <IconComponent className={`w-5 h-5 ${classroom?.color}`} />
-                              <div>
-                                <p className="font-semibold capitalize text-sm">{salon.salon}</p>
-                                <p className="text-xs text-muted-foreground">{salon.totalPuntos} puntos acumulados</p>
-                              </div>
+                               <div>
+                                 <p className="font-semibold capitalize text-sm">{salon.salon}</p>
+                                 <p className="text-xs text-muted-foreground">{salon.promedioPuntos} pts promedio</p>
+                                 <p className="text-xs text-blue-600">{(salon as any).diasEvaluados} días evaluados</p>
+                               </div>
                             </div>
                             {index === 0 && (
                               <div className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold">

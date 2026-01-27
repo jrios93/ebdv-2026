@@ -269,24 +269,19 @@ export async function getStatsDashboard(): Promise<{
     
     // Calcular mejor classroom (basado en evaluaciones grupales)
     const { data: grupalesHoy } = await supabase
-      .from('puntuacion_grupal_diaria')
+      .from('v_promedios_diarios')
       .select(`
-        classroom_id,
-        puntualidad,
-        animo_y_barras,
-        orden,
-        verso_memoria,
-        preguntas_correctas,
-        classrooms!inner(nombre)
+        classroom_nombre,
+        puntaje_total_promedio,
+        estado
       `)
       .eq('fecha', today)
+      .eq('estado', 'completado')
     
     let mejorClassroom = null
     if (grupalesHoy && grupalesHoy.length > 0) {
       const scores = grupalesHoy.reduce((acc, grupal: any) => {
-        const total = grupal.puntualidad + grupal.animo_y_barras + 
-                    grupal.orden + grupal.verso_memoria + grupal.preguntas_correctas
-        acc[grupal.classrooms.nombre] = (acc[grupal.classrooms.nombre] || 0) + total
+        acc[grupal.classroom_nombre] = grupal.puntaje_total_promedio
         return acc
       }, {} as Record<string, number>)
       
@@ -933,7 +928,25 @@ export async function getResumenSemanal(): Promise<{
       return acc
     }, {})
     
-    const rankingAlumnos = Object.values(scoresAlumnos || {})
+    // Ranking general de alumnos (para otros usos)
+    const rankingGeneralAlumnos = Object.values(scoresAlumnos || {})
+      .sort((a: any, b: any) => b.totalPuntos - a.totalPuntos)
+      .map((item: any, index) => ({
+        ...item,
+        posicion: index + 1
+      }))
+
+    // Obtener solo el #1 de cada salón para "Ganadores por Salón"
+    const ganadoresPorSalon: Record<string, any> = {}
+    Object.values(scoresAlumnos || {}).forEach((alumno: any) => {
+      const salon = alumno.alumno.classrooms?.nombre || 'sin-salon'
+      if (!ganadoresPorSalon[salon] || alumno.totalPuntos > ganadoresPorSalon[salon].totalPuntos) {
+        ganadoresPorSalon[salon] = alumno
+      }
+    })
+
+    // Convertir a array y ordenar por puntos
+    const rankingAlumnos = Object.values(ganadoresPorSalon)
       .sort((a: any, b: any) => b.totalPuntos - a.totalPuntos)
       .map((item: any, index) => ({
         ...item,
@@ -956,7 +969,8 @@ export async function getResumenSemanal(): Promise<{
     
     console.log('📊 Datos grupales encontrados:', datosGrupales?.length)
     
-    const scoresSalones = datosGrupales?.reduce((acc: Record<string, number>, item: any) => {
+    // Para cada salón, guardamos suma y conteo para calcular promedio
+    const scoresSalones = datosGrupales?.reduce((acc: Record<string, {suma: number, conteo: number}>, item: any) => {
       // Validar que exista el salón
       if (!item.classrooms || !item.classrooms.nombre) {
         console.warn('⚠️ Item sin datos de salón:', item)
@@ -965,13 +979,25 @@ export async function getResumenSemanal(): Promise<{
       
       const salon = item.classrooms.nombre
       const total = (item.puntualidad || 0) + (item.animo_y_barras || 0) + (item.orden || 0) + (item.verso_memoria || 0) + (item.preguntas_correctas || 0)
-      acc[salon] = (acc[salon] || 0) + total
+      
+      if (!acc[salon]) {
+        acc[salon] = { suma: 0, conteo: 0 }
+      }
+      
+      acc[salon].suma += total
+      acc[salon].conteo += 1
+      
       return acc
     }, {})
     
     const rankingSalones = Object.entries(scoresSalones || {})
-      .map(([salon, totalPuntos]) => ({ salon, totalPuntos: Number(totalPuntos) }))
-      .sort((a, b) => b.totalPuntos - a.totalPuntos)
+      .map(([salon, datos]) => ({ 
+        salon, 
+        totalPuntos: Number(datos.suma),
+        promedioPuntos: Number((datos.suma / datos.conteo).toFixed(2)),
+        diasEvaluados: datos.conteo
+      }))
+      .sort((a, b) => b.promedioPuntos - a.promedioPuntos) // Ordenar por promedio, no por suma
       .map((item, index) => ({
         ...item,
         posicion: index + 1

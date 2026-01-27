@@ -13,11 +13,12 @@ import { Search, Users, ArrowLeft, RefreshCw, UserCheck, AlertCircle, Calendar, 
 import { useRealtimeInscripciones } from "@/hooks/useRealtimeInscripciones"
 import { getAllClassrooms } from "@/lib/supabaseQueries"
 import { supabase } from "@/lib/supabase"
+import { getClassroomInfo } from "@/lib/classroom"
 
 // Mapa de IDs a nombres de salones (extraído de los archivos existentes)
 const CLASSROOM_IDS: Record<string, string> = {
   "eda65bd9-dadd-4f74-954e-b952a91845a3": "vida",
-  "d863c43d-9b83-494a-a88b-c3973a31bfd7": "luz", 
+  "d863c43d-9b83-494a-a88b-c3973a31bfd7": "luz",
   "9b8a58b3-6356-4b75-b28b-d5f5d8e596fd": "gracia",
   "5272477b-26a4-4179-a276-1c4730238974": "verdad"
 }
@@ -26,7 +27,7 @@ const CLASSROOM_IDS: Record<string, string> = {
 const CLASSROOM_NAMES: Record<string, string> = {
   "vida": "eda65bd9-dadd-4f74-954e-b952a91845a3",
   "luz": "d863c43d-9b83-494a-a88b-c3973a31bfd7",
-  "gracia": "9b8a58b3-6356-4b75-b28b-d5f5d8e596fd", 
+  "gracia": "9b8a58b3-6356-4b75-b28b-d5f5d8e596fd",
   "verdad": "5272477b-26a4-4179-a276-1c4730238974"
 }
 
@@ -64,7 +65,7 @@ export default function ReportesPage() {
         console.error('Error cargando evaluaciones:', error)
       }
     }
-    
+
     cargarEvaluacionesHoy()
   }, [])
 
@@ -74,46 +75,62 @@ export default function ReportesPage() {
       const name = CLASSROOM_IDS[alumno.classroom_forzado_id]
       return name ? `${name} (Forzado)` : `Salón forzado (ID: ${alumno.classroom_forzado_id.slice(0, 8)}...)`
     }
-    
+
     // Salón normal
     if (alumno.classroom_id) {
       const name = CLASSROOM_IDS[alumno.classroom_id]
       return name || `Salón (ID: ${alumno.classroom_id.slice(0, 8)}...)`
     }
-    
+
     return 'Sin salón asignado'
+  }
+
+  const getClassroomInfoForAlumno = (alumno: any) => {
+    // Verificar si es forzado primero
+    if (alumno.classroom_forzado_id) {
+      const name = CLASSROOM_IDS[alumno.classroom_forzado_id]
+      return name ? getClassroomInfo(name) : null
+    }
+
+    // Salón normal
+    if (alumno.classroom_id) {
+      const name = CLASSROOM_IDS[alumno.classroom_id]
+      return name ? getClassroomInfo(name) : null
+    }
+
+    return null
   }
 
   const getAsistenciaStatus = (alumno: any) => {
     if (evaluacionesHoy.has(alumno.id)) {
       return { status: 'asistio', label: 'Asistió', color: 'text-green-600', icon: CheckCircle }
     }
-    
+
     // Si es hoy y no ha sido evaluado, mostrar pendiente
     const today = new Date().toISOString().split('T')[0]
     const inscripcionDate = new Date(alumno.fecha_inscripcion).toISOString().split('T')[0]
-    
+
     if (inscripcionDate === today) {
       return { status: 'reciente', label: 'Inscrito hoy', color: 'text-blue-600', icon: Clock }
     }
-    
+
     return { status: 'pendiente', label: 'Sin validar', color: 'text-orange-600', icon: XCircle }
   }
 
   const getStatsByClassroom = () => {
     const stats = Object.values(CLASSROOM_NAMES).reduce((acc: any, classroomId) => {
-      acc[classroomId] = alumnos.filter(a => 
+      acc[classroomId] = alumnos.filter(a =>
         a.classroom_id === classroomId || a.classroom_forzado_id === classroomId
       ).length
       return acc
     }, {})
-    
+
     return {
       total: alumnos.length,
-      hoy: alumnos.filter(a => 
+      hoy: alumnos.filter(a =>
         new Date(a.fecha_inscripcion).toDateString() === new Date().toDateString()
       ).length,
-      asistidosHoy: Array.from(evaluacionesHoy).filter(id => 
+      asistidosHoy: Array.from(evaluacionesHoy).filter(id =>
         alumnos.some(a => a.id === id)
       ).length,
       porSalon: stats
@@ -182,81 +199,84 @@ export default function ReportesPage() {
 
   return (
     <StaffGuard role="inscripciones">
-      <div className="min-h-screen bg-background p-6">
-        <div className="max-w-6xl mx-auto space-y-6">
+      <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
+        <div className="max-w-7xl mx-auto space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/staff">
-                <Button variant="outline" size="sm">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Volver
-                </Button>
-              </Link>
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">📊 Reportes Básicos</h1>
-                <p className="text-sm text-muted-foreground">
-                  Inscripciones y validación de asistencia en tiempo real
-                </p>
+          <div className="bg-white rounded-xl shadow-sm border p-6">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <Link href="/staff" className="flex items-start justify-start text-start">
+                  <Button variant="outline" size="lg" className="text-sm sm:text-base px-4 py-3 h-auto min-h-[44px]">
+                    <ArrowLeft className="w-5 h-5 mr-2" />
+                    Volver
+                  </Button>
+                </Link>
+                <div className="space-y-2">
+                  <h1 className="text-3xl font-bold text-foreground">📊 Reportes Básicos</h1>
+                  <p className="text-base text-muted-foreground">
+                    Inscripciones y validación de asistencia en tiempo real
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="text-sm">
-                <Users className="w-3 h-3 mr-1" />
-                {stats.total} inscritos
-              </Badge>
-              <Badge variant="outline" className="text-sm">
-                <Calendar className="w-3 h-3 mr-1" />
-                {stats.hoy} hoy
-              </Badge>
-              <Badge variant="default" className="text-sm bg-green-100 text-green-700 border-green-300">
-                <CheckCircle className="w-3 h-3 mr-1" />
-                {stats.asistidosHoy} asistieron
-              </Badge>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={refrescar}
-                disabled={loading}
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                Refrescar
-              </Button>
+              <div className="flex flex-wrap items-center justify-start lg:justify-center gap-3">
+                <Badge variant="secondary" className="text-base py-3 px-5 h-auto min-h-[44px] flex items-center">
+                  <Users className="w-4 h-4 mr-2" />
+                  {stats.total} inscritos
+                </Badge>
+                <Badge variant="destructive" className="text-base py-3 px-5 h-auto min-h-[44px] flex items-center">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  {stats.hoy} hoy
+                </Badge>
+                <Badge variant="default" className="text-base py-3 px-5 h-auto min-h-[44px] bg-green-100 text-green-700 border-green-300 flex items-center">
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  {stats.asistidosHoy} asistieron
+                </Badge>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={refrescar}
+                  disabled={loading}
+                  className="text-sm sm:text-base px-5 py-3 h-auto min-h-[44px]"
+                >
+                  <RefreshCw className={`w-5 h-5 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                  Refrescar
+                </Button>
+              </div>
             </div>
           </div>
 
           {/* Filtros */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Filter className="w-5 h-5 text-blue-500" />
+          <Card className="shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <Filter className="w-6 h-6 text-blue-500" />
                 Filtros de Búsqueda
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    <Search className="w-3 h-3 inline mr-1" />
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-base font-medium block text-gray-700">
+                    <Search className="w-4 h-4 inline mr-2" />
                     Buscar por nombre, apellido o padre
                   </label>
                   <Input
                     placeholder="Ej: Mateo, Pérez, Juan..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full"
+                    className="w-full h-12 text-base px-4"
                   />
                 </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    <Calendar className="w-3 h-3 inline mr-1" />
+                <div className="space-y-2">
+                  <label className="text-base font-medium block text-gray-700">
+                    <Calendar className="w-4 h-4 inline mr-2" />
                     Fecha de inscripción (dejar vacío para todos)
                   </label>
                   <Input
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    className="w-full"
+                    className="w-full h-12 text-base px-4"
                   />
                 </div>
               </div>
@@ -265,21 +285,31 @@ export default function ReportesPage() {
 
           {/* Tabs por salón */}
           <Tabs value={classroomTab} onValueChange={setClassroomTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="todos">Todos ({stats.total})</TabsTrigger>
+            <TabsList className="grid w-full h-auto p-1 bg-gray-100 rounded-lg grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1">
+              <TabsTrigger 
+                value="todos" 
+                className="text-base sm:text-lg py-3 px-4 h-auto min-h-[48px] data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md font-medium"
+              >
+                Todos ({stats.total})
+              </TabsTrigger>
               {Object.entries(CLASSROOM_NAMES).map(([name, id]) => (
-                <TabsTrigger key={id} value={id}>
+                <TabsTrigger 
+                  key={id} 
+                  value={id}
+                  className="text-base sm:text-lg py-3 px-4 h-auto min-h-[48px] data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md font-medium"
+                >
                   {name} ({stats.porSalon[id] || 0})
                 </TabsTrigger>
               ))}
             </TabsList>
 
             <TabsContent value="todos" className="mt-6">
-              <AlumnosList 
-                alumnos={alumnos} 
-                loading={loading} 
+              <AlumnosList
+                alumnos={alumnos}
+                loading={loading}
                 error={error}
                 getClassroomName={getClassroomName}
+                getClassroomInfoForAlumno={getClassroomInfoForAlumno}
                 getAsistenciaStatus={getAsistenciaStatus}
                 evaluacionesHoy={evaluacionesHoy}
                 editingAlumno={editingAlumno}
@@ -293,13 +323,14 @@ export default function ReportesPage() {
 
             {Object.entries(CLASSROOM_NAMES).map(([name, id]) => (
               <TabsContent key={id} value={id} className="mt-6">
-                <AlumnosList 
-                  alumnos={alumnos.filter(a => 
+                <AlumnosList
+                  alumnos={alumnos.filter(a =>
                     a.classroom_id === id || a.classroom_forzado_id === id
-                  )} 
-                  loading={loading} 
+                  )}
+                  loading={loading}
                   error={error}
                   getClassroomName={getClassroomName}
+                  getClassroomInfoForAlumno={getClassroomInfoForAlumno}
                   getAsistenciaStatus={getAsistenciaStatus}
                   evaluacionesHoy={evaluacionesHoy}
                   editingAlumno={editingAlumno}
@@ -323,6 +354,7 @@ interface AlumnosListProps {
   loading: boolean
   error: string | null
   getClassroomName: (alumno: any) => string
+  getClassroomInfoForAlumno: (alumno: any) => any
   getAsistenciaStatus: (alumno: any) => { status: string, label: string, color: string, icon: any }
   evaluacionesHoy: Set<string>
   editingAlumno: string | null
@@ -333,12 +365,13 @@ interface AlumnosListProps {
   onEditChange: (field: string, value: any) => void
 }
 
-function AlumnosList({ 
-  alumnos, 
-  loading, 
-  error, 
-  getClassroomName, 
-  getAsistenciaStatus, 
+function AlumnosList({
+  alumnos,
+  loading,
+  error,
+  getClassroomName,
+  getClassroomInfoForAlumno,
+  getAsistenciaStatus,
   evaluacionesHoy,
   editingAlumno,
   editForm,
@@ -394,91 +427,116 @@ function AlumnosList({
           Lista de Alumnos Inscritos ({alumnos.length})
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-2 max-h-96 overflow-y-auto">
+      <CardContent className="p-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 max-h-[800px] overflow-y-auto pr-2">
           {alumnos.map((alumno) => {
             const asistencia = getAsistenciaStatus(alumno)
             const IconComponent = asistencia.icon
             const isEditing = editingAlumno === alumno.id
-            
+            const classroomInfo = getClassroomInfoForAlumno(alumno)
+            const ClassroomIcon = classroomInfo?.icon
+            const cardColors = classroomInfo || {
+              borderColor: 'border-gray-200',
+              bgColor: 'bg-white',
+              hoverColor: 'hover:border-blue-300 hover:bg-blue-50/50'
+            }
+
             return (
               <div
                 key={alumno.id}
-                className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                className={`p-6 ${cardColors.bgColor} border-2 ${cardColors.borderColor} rounded-xl ${cardColors.hoverColor} transition-all duration-200 shadow-sm hover:shadow-md relative overflow-hidden`}
               >
-                <div className="flex items-start justify-between">
+                {/* Color indicator bar */}
+                <div className={`absolute left-0 top-0 bottom-0 w-2 ${classroomInfo ? classroomInfo.bgColor + ' ' + classroomInfo.textColor : 'bg-gray-200'}`}></div>
+                
+                <div className="flex items-start justify-between ml-3">
                   <div className="flex-1">
                     {/* Header con nombre y acciones */}
-                    <div className="flex items-center gap-2 mb-3">
-                      {isEditing ? (
-                        <div className="flex items-center gap-2 flex-1">
-                          <Input
-                            value={editForm.nombre}
-                            onChange={(e) => onEditChange('nombre', e.target.value)}
-                            className="w-32"
-                            placeholder="Nombre"
-                          />
-                          <Input
-                            value={editForm.apellidos}
-                            onChange={(e) => onEditChange('apellidos', e.target.value)}
-                            className="w-40"
-                            placeholder="Apellidos"
-                          />
-                        </div>
-                      ) : (
-                        <span className="font-medium text-lg">
-                          {alumno.nombre} {alumno.apellidos}
-                        </span>
-                      )}
-                      
-                      <Badge variant="secondary">
-                        {isEditing ? (
-                          <select
-                            value={editForm.edad}
-                            onChange={(e) => onEditChange('edad', parseInt(e.target.value))}
-                            className="bg-transparent border-none outline-none"
-                          >
-                            {[...Array(13)].map((_, i) => {
-                              const age = i + 3
-                              return (
-                                <option key={age} value={age}>{age} años</option>
-                              )
-                            })}
-                          </select>
-                        ) : (
-                          `${alumno.edad} años`
-                        )}
-                      </Badge>
-                      
-                      <Badge variant="outline">
-                        {isEditing ? (
-                          <select
-                            value={editForm.genero}
-                            onChange={(e) => onEditChange('genero', e.target.value)}
-                            className="bg-transparent border-none outline-none"
-                          >
-                            <option value="niño">Niño</option>
-                            <option value="niña">Niña</option>
-                          </select>
-                        ) : (
-                          alumno.genero
-                        )}
-                      </Badge>
-                      
-                      {alumno.classroom_forzado_id && (
-                        <Badge variant="destructive" className="text-xs">
-                          Forzado
-                        </Badge>
-                      )}
-                      
-                      <Badge 
-                        variant={asistencia.status === 'asistio' ? 'default' : 'outline'}
-                        className={`${asistencia.status === 'asistio' ? 'bg-green-100 text-green-700 border-green-300' : ''}`}
-                      >
-                        <IconComponent className={`w-3 h-3 mr-1 ${asistencia.color}`} />
-                        {asistencia.label}
-                      </Badge>
-                      
+                    <div className="flex flex-col md:flex-row items-center gap-2 mb-3">
+                       <div className="flex items-start sm:items-center gap-3 flex-1 w-full">
+                         {/* Icono del salón */}
+                         {classroomInfo && (
+                           <div className={`p-2 ${classroomInfo.bgColor} rounded-lg border ${classroomInfo.borderColor}`}>
+                             <ClassroomIcon className={`w-5 h-5 ${classroomInfo.textColor}`} />
+                           </div>
+                         )}
+                         
+                         <div className="flex-1">
+                           {isEditing ? (
+                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                               <Input
+                                 value={editForm.nombre}
+                                 onChange={(e) => onEditChange('nombre', e.target.value)}
+                                 className="w-full sm:w-40 h-10 text-base"
+                                 placeholder="Nombre"
+                               />
+                               <Input
+                                 value={editForm.apellidos}
+                                 onChange={(e) => onEditChange('apellidos', e.target.value)}
+                                 className="w-full sm:w-48 h-10 text-base"
+                                 placeholder="Apellidos"
+                               />
+                             </div>
+                           ) : (
+                             <span className="font-semibold text-lg sm:text-xl text-gray-900">
+                               {alumno.nombre} {alumno.apellidos}
+                             </span>
+                           )}
+                         </div>
+                       </div>
+
+                       <div className="flex flex-wrap items-center gap-2">
+
+                         <Badge variant="secondary" className="text-sm px-3 py-2 h-auto min-h-[36px]">
+                           {isEditing ? (
+                             <select
+                               value={editForm.edad}
+                               onChange={(e) => onEditChange('edad', parseInt(e.target.value))}
+                               className="bg-transparent border-none outline-none text-sm font-medium"
+                             >
+                               {[...Array(13)].map((_, i) => {
+                                 const age = i + 3
+                                 return (
+                                   <option key={age} value={age}>{age} años</option>
+                                 )
+                               })}
+                             </select>
+                           ) : (
+                             `${alumno.edad} años`
+                           )}
+                         </Badge>
+
+                         <Badge variant="outline" className="text-sm px-3 py-2 h-auto min-h-[36px]">
+                           {isEditing ? (
+                             <select
+                               value={editForm.genero}
+                               onChange={(e) => onEditChange('genero', e.target.value)}
+                               className="bg-transparent border-none outline-none text-sm font-medium"
+                             >
+                               <option value="niño">Niño</option>
+                               <option value="niña">Niña</option>
+                             </select>
+                           ) : (
+                             alumno.genero
+                           )}
+                         </Badge>
+
+                         {alumno.classroom_forzado_id && (
+                           <Badge variant="destructive" className="text-sm px-3 py-2 h-auto min-h-[36px]">
+                             Forzado
+                           </Badge>
+                         )}
+
+                         <Badge
+                           variant={asistencia.status === 'asistio' ? 'default' : 'outline'}
+                           className={`text-sm px-3 py-2 h-auto min-h-[36px] ${asistencia.status === 'asistio' ? 'bg-green-100 text-green-700 border-green-300' : ''}`}
+                         >
+                           <IconComponent className={`w-4 h-4 mr-1 ${asistencia.color}`} />
+                           {asistencia.label}
+                         </Badge>
+
+                      </div>
+
                       {/* Botones de acción */}
                       <div className="flex items-center gap-1 ml-auto">
                         {isEditing ? (
@@ -514,7 +572,7 @@ function AlumnosList({
                         )}
                       </div>
                     </div>
-                    
+
                     {/* Información del alumno */}
                     <div className="text-sm text-muted-foreground space-y-2">
                       {isEditing ? (
@@ -556,20 +614,22 @@ function AlumnosList({
                           )}
                         </>
                       )}
-                      
-                      <div className="flex items-center gap-2">
-                        <span><strong>Salón:</strong> {getClassroomName(alumno)}</span>
-                        <span>•</span>
-                        <span>
-                          <strong>Inscrito:</strong> {new Date(alumno.fecha_inscripcion).toLocaleDateString('es-ES', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </span>
-                      </div>
+
+                       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                         <span className={`font-medium ${classroomInfo ? classroomInfo.textColor : 'text-gray-600'}`}>
+                           <strong>Salón:</strong> {getClassroomName(alumno)}
+                         </span>
+                         <span className="hidden sm:flex">•</span>
+                         <span>
+                           <strong>Inscrito:</strong> {new Date(alumno.fecha_inscripcion).toLocaleDateString('es-ES', {
+                             day: '2-digit',
+                             month: '2-digit',
+                             year: 'numeric',
+                             hour: '2-digit',
+                             minute: '2-digit'
+                           })}
+                         </span>
+                       </div>
                     </div>
                   </div>
                 </div>

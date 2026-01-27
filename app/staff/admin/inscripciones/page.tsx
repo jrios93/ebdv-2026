@@ -33,7 +33,9 @@ export default function InscripcionesAdminPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedDate, setSelectedDate] = useState("") // Iniciar vacío para mostrar todos
   const [classroomTab, setClassroomTab] = useState("todos")
-  const [classrooms, setClassrooms] = useState<any[]>([])
+  const [classrooms, setClassrooms] = useState<Array<{id: string, nombre: string}>>(() => 
+    Object.entries(CLASSROOM_NAMES).map(([name, id]) => ({ id, nombre: name }))
+  )
 
   const { alumnos, loading, error, refrescar } = useRealtimeInscripciones({
     classroomFilter: classroomTab === "todos" ? undefined : classroomTab,
@@ -41,14 +43,7 @@ export default function InscripcionesAdminPage() {
     searchTerm: searchTerm.length >= 2 ? searchTerm : undefined
   })
 
-  useEffect(() => {
-    // Convertir las constantes a formato de array para los tabs
-    const classroomsArray = Object.entries(CLASSROOM_NAMES).map(([name, id]) => ({
-      id,
-      nombre: name
-    }))
-    setClassrooms(classroomsArray)
-  }, [])
+  // Classrooms initialized directly in useState to avoid useEffect issue
 
   const getClassroomName = (alumno: any) => {
     // Usar el mapa predefinido de IDs a nombres
