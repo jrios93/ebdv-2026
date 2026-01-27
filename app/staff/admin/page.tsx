@@ -72,7 +72,7 @@ export default function AdminPage() {
   }
 
   const reloadRef = useRef<() => Promise<any>>(() => Promise.resolve())
-  
+
   const { data: dashboardData, loading: isLoading, lastUpdate, reload } = useManualLoad(async () => {
     const loadData = async () => {
       try {
@@ -104,7 +104,7 @@ export default function AdminPage() {
         throw error
       }
     }
-    
+
     reloadRef.current = loadData
     return await loadData()
   }, true)
@@ -128,11 +128,11 @@ export default function AdminPage() {
               console.log('🔔 Realtime: Cambio detectado en puntuacion_grupal_diaria', payload)
               setRealtimeStatus('connected')
               // Recargar dashboard cuando haya cambios
-               setTimeout(async () => {
-                 if (reloadRef.current) {
-                   await reloadRef.current()
-                 }
-               }, 500)
+              setTimeout(async () => {
+                if (reloadRef.current) {
+                  await reloadRef.current()
+                }
+              }, 500)
             }
           )
           .subscribe()
@@ -156,7 +156,7 @@ export default function AdminPage() {
     }
   }, [reload])
 
-        // Efecto para mostrar estado de conexión en tiempo real
+  // Efecto para mostrar estado de conexión en tiempo real
   useEffect(() => {
     const interval = setInterval(() => {
       if (realtimeStatus === 'disconnected') {
@@ -179,7 +179,7 @@ export default function AdminPage() {
                 }
               )
               .subscribe()
-            
+
             channel?.unsubscribe()
           } catch (error) {
             console.log('❌ Error al reconectar, intentando en 5 segundos...')
@@ -418,17 +418,26 @@ export default function AdminPage() {
                         const isFirstInClassroom = index === 0 ||
                           (index > 0 && resumenSemanal.rankingAlumnos[index - 1].alumno.classroom_id !== item.alumno.classroom_id)
 
+                        const salonNombre = (item.alumno as any).classrooms?.nombre || 'sin-salon'
+                        const classroom = classrooms.find(c => c.name === salonNombre)
+                        const salonColor = classroom?.color || "bg-gray-100 text-gray-700 border-gray-300"
+
                         return (
-                          <div key={item.alumno.id} className={`relative rounded-lg p-3 transition-all ${isFirstInClassroom
+                          <div key={item.alumno.id} className={`relative rounded-lg p-3 transition-all ${index === 0
                             ? 'bg-gradient-to-r from-yellow-100 to-orange-100 border-2 border-yellow-300 shadow-sm'
                             : 'bg-white/70'
                             }`}>
-                            {isFirstInClassroom && (
-                              <div className="absolute -top-2 -right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                            <div className="absolute -top-2 left-2">
+                              <span className={`text-xs px-2 py-1 rounded-full font-bold ${salonColor}`}>
+                                {salonNombre}
+                              </span>
+                            </div>
+                            {index === 0 && (
+                              <div className="absolute -top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full font-bold">
                                 🏆
                               </div>
                             )}
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between mt-3">
                               <div className="flex items-center gap-3">
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold shadow ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-orange-500' :
                                   index === 1 ? 'bg-gray-400' :
@@ -466,7 +475,7 @@ export default function AdminPage() {
                   <CardTitle className="flex items-center gap-2">
                     <TrendingUp className="w-6 h-6 text-green-600" />
                     Ranking de Salones
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Puntos grupales</span>
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Por promedio</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -474,7 +483,7 @@ export default function AdminPage() {
                     <div className="text-center py-8">Cargando ranking...</div>
                   ) : resumenSemanal.rankingSalones.length > 0 ? (
                     <div className="space-y-3">
-                      {resumenSemanal.rankingSalones.map((salon, index) => {
+                      {resumenSemanal.rankingSalones.map((salon: any, index) => {
                         const classroom = classrooms.find(c => c.name === salon.salon.toLowerCase())
                         const IconComponent = classroom?.icon || TrendingUp
 
@@ -491,7 +500,10 @@ export default function AdminPage() {
                               <IconComponent className={`w-5 h-5 ${classroom?.color}`} />
                               <div>
                                 <p className="font-semibold capitalize text-sm">{salon.salon}</p>
-                                <p className="text-xs text-muted-foreground">{salon.totalPuntos} puntos acumulados</p>
+                                <p className="text-xs text-muted-foreground">{salon.promedioPuntos} pts promedio</p>
+                                <p className="text-xs text-blue-600">
+                                  {(salon as any).diasEvaluados} {(salon as any).diasEvaluados === 1 ? 'evaluación' : 'evaluaciones'}
+                                </p>
                               </div>
                             </div>
                             {index === 0 && (
@@ -567,25 +579,25 @@ export default function AdminPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                   {/* Botón de administración de alumnos */}
-                   <Link href="/staff/admin/alumnos">
-                     <Card className="cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-lg border border-blue-200 bg-blue-50">
-                       <CardContent className="p-3 text-center">
-                         <Users className="w-6 h-6 mx-auto mb-2 text-blue-600" />
-                         <p className="text-xs font-medium text-blue-900">Admin Alumnos</p>
-                       </CardContent>
-                     </Card>
-                   </Link>
+                  {/* Botón de administración de alumnos */}
+                  <Link href="/staff/admin/alumnos">
+                    <Card className="cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-lg border border-blue-200 bg-blue-50">
+                      <CardContent className="p-3 text-center">
+                        <Users className="w-6 h-6 mx-auto mb-2 text-blue-600" />
+                        <p className="text-xs font-medium text-blue-900">Admin Alumnos</p>
+                      </CardContent>
+                    </Card>
+                  </Link>
 
-                   {/* Botón de inscripciones en tiempo real */}
-                   <Link href="/staff/admin/inscripciones">
-                     <Card className="cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-lg border border-green-200 bg-green-50">
-                       <CardContent className="p-3 text-center">
-                         <UserPlus className="w-6 h-6 mx-auto mb-2 text-green-600" />
-                         <p className="text-xs font-medium text-green-900">Inscripciones</p>
-                       </CardContent>
-                     </Card>
-                   </Link>
+                  {/* Botón de inscripciones en tiempo real */}
+                  <Link href="/staff/admin/inscripciones">
+                    <Card className="cursor-pointer transition-all duration-200 transform hover:scale-105 hover:shadow-lg border border-green-200 bg-green-50">
+                      <CardContent className="p-3 text-center">
+                        <UserPlus className="w-6 h-6 mx-auto mb-2 text-green-600" />
+                        <p className="text-xs font-medium text-green-900">Inscripciones</p>
+                      </CardContent>
+                    </Card>
+                  </Link>
 
                   {classrooms.map((classroom) => {
                     const IconComponent = classroom.icon
@@ -642,7 +654,7 @@ export default function AdminPage() {
                       </Button>
                     </div>
                   </div>
-                  
+
                   {/* Exportación Semanal */}
                   <div>
                     <h4 className="text-sm font-medium mb-2 text-muted-foreground">📊 Datos Semanales (Lunes a Domingo)</h4>
