@@ -286,15 +286,15 @@ export default function ReportesPage() {
           {/* Tabs por salón */}
           <Tabs value={classroomTab} onValueChange={setClassroomTab} className="w-full">
             <TabsList className="grid w-full h-auto p-1 bg-gray-100 rounded-lg grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1">
-              <TabsTrigger 
-                value="todos" 
+              <TabsTrigger
+                value="todos"
                 className="text-base sm:text-lg py-3 px-4 h-auto min-h-[48px] data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md font-medium"
               >
                 Todos ({stats.total})
               </TabsTrigger>
               {Object.entries(CLASSROOM_NAMES).map(([name, id]) => (
-                <TabsTrigger 
-                  key={id} 
+                <TabsTrigger
+                  key={id}
                   value={id}
                   className="text-base sm:text-lg py-3 px-4 h-auto min-h-[48px] data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md font-medium"
                 >
@@ -448,92 +448,92 @@ function AlumnosList({
               >
                 {/* Color indicator bar */}
                 <div className={`absolute left-0 top-0 bottom-0 w-2 ${classroomInfo ? classroomInfo.bgColor + ' ' + classroomInfo.textColor : 'bg-gray-200'}`}></div>
-                
+
                 <div className="flex items-start justify-between ml-3">
                   <div className="flex-1">
                     {/* Header con nombre y acciones */}
                     <div className="flex flex-col md:flex-row items-center gap-2 mb-3">
-                       <div className="flex items-start sm:items-center gap-3 flex-1 w-full">
-                         {/* Icono del salón */}
-                         {classroomInfo && (
-                           <div className={`p-2 ${classroomInfo.bgColor} rounded-lg border ${classroomInfo.borderColor}`}>
-                             <ClassroomIcon className={`w-5 h-5 ${classroomInfo.textColor}`} />
-                           </div>
-                         )}
-                         
-                         <div className="flex-1">
-                           {isEditing ? (
-                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                               <Input
-                                 value={editForm.nombre}
-                                 onChange={(e) => onEditChange('nombre', e.target.value)}
-                                 className="w-full sm:w-40 h-10 text-base"
-                                 placeholder="Nombre"
-                               />
-                               <Input
-                                 value={editForm.apellidos}
-                                 onChange={(e) => onEditChange('apellidos', e.target.value)}
-                                 className="w-full sm:w-48 h-10 text-base"
-                                 placeholder="Apellidos"
-                               />
-                             </div>
-                           ) : (
-                             <span className="font-semibold text-lg sm:text-xl text-gray-900">
-                               {alumno.nombre} {alumno.apellidos}
-                             </span>
-                           )}
-                         </div>
-                       </div>
+                      <div className="flex items-start sm:items-center gap-3 flex-1 w-full">
+                        {/* Icono del salón */}
+                        {classroomInfo && (
+                          <div className={`p-2 ${classroomInfo.bgColor} rounded-lg border ${classroomInfo.borderColor}`}>
+                            <ClassroomIcon className={`w-5 h-5 ${classroomInfo.textColor}`} />
+                          </div>
+                        )}
 
-                       <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex-1">
+                          {isEditing ? (
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                              <Input
+                                value={editForm.nombre}
+                                onChange={(e) => onEditChange('nombre', e.target.value)}
+                                className="w-full sm:w-40 h-10 text-base"
+                                placeholder="Nombre"
+                              />
+                              <Input
+                                value={editForm.apellidos}
+                                onChange={(e) => onEditChange('apellidos', e.target.value)}
+                                className="w-full sm:w-48 h-10 text-base"
+                                placeholder="Apellidos"
+                              />
+                            </div>
+                          ) : (
+                            <span className="font-semibold text-lg sm:text-xl text-gray-900">
+                              {alumno.nombre} {alumno.apellidos}
+                            </span>
+                          )}
+                        </div>
+                      </div>
 
-                         <Badge variant="secondary" className="text-sm px-3 py-2 h-auto min-h-[36px]">
-                           {isEditing ? (
-                             <select
-                               value={editForm.edad}
-                               onChange={(e) => onEditChange('edad', parseInt(e.target.value))}
-                               className="bg-transparent border-none outline-none text-sm font-medium"
-                             >
-                               {[...Array(13)].map((_, i) => {
-                                 const age = i + 3
-                                 return (
-                                   <option key={age} value={age}>{age} años</option>
-                                 )
-                               })}
-                             </select>
-                           ) : (
-                             `${alumno.edad} años`
-                           )}
-                         </Badge>
+                      <div className="flex  items-center gap-2">
 
-                         <Badge variant="outline" className="text-sm px-3 py-2 h-auto min-h-[36px]">
-                           {isEditing ? (
-                             <select
-                               value={editForm.genero}
-                               onChange={(e) => onEditChange('genero', e.target.value)}
-                               className="bg-transparent border-none outline-none text-sm font-medium"
-                             >
-                               <option value="niño">Niño</option>
-                               <option value="niña">Niña</option>
-                             </select>
-                           ) : (
-                             alumno.genero
-                           )}
-                         </Badge>
+                        <Badge variant="secondary" className="text-sm px-3 py-2 h-auto min-h-[36px]">
+                          {isEditing ? (
+                            <select
+                              value={editForm.edad}
+                              onChange={(e) => onEditChange('edad', parseInt(e.target.value))}
+                              className="bg-transparent border-none outline-none text-sm font-medium"
+                            >
+                              {[...Array(13)].map((_, i) => {
+                                const age = i + 3
+                                return (
+                                  <option key={age} value={age}>{age} años</option>
+                                )
+                              })}
+                            </select>
+                          ) : (
+                            `${alumno.edad} años`
+                          )}
+                        </Badge>
 
-                         {alumno.classroom_forzado_id && (
-                           <Badge variant="destructive" className="text-sm px-3 py-2 h-auto min-h-[36px]">
-                             Forzado
-                           </Badge>
-                         )}
+                        <Badge variant="outline" className="text-sm px-3 py-2 h-auto min-h-[36px]">
+                          {isEditing ? (
+                            <select
+                              value={editForm.genero}
+                              onChange={(e) => onEditChange('genero', e.target.value)}
+                              className="bg-transparent border-none outline-none text-sm font-medium"
+                            >
+                              <option value="niño">Niño</option>
+                              <option value="niña">Niña</option>
+                            </select>
+                          ) : (
+                            alumno.genero
+                          )}
+                        </Badge>
 
-                         <Badge
-                           variant={asistencia.status === 'asistio' ? 'default' : 'outline'}
-                           className={`text-sm px-3 py-2 h-auto min-h-[36px] ${asistencia.status === 'asistio' ? 'bg-green-100 text-green-700 border-green-300' : ''}`}
-                         >
-                           <IconComponent className={`w-4 h-4 mr-1 ${asistencia.color}`} />
-                           {asistencia.label}
-                         </Badge>
+                        {alumno.classroom_forzado_id && (
+                          <Badge variant="destructive" className="text-sm px-3 py-2 h-auto min-h-[36px]">
+                            Forzado
+                          </Badge>
+                        )}
+
+                        <Badge
+                          variant={asistencia.status === 'asistio' ? 'default' : 'outline'}
+                          className={`text-sm px-3 py-2 h-auto min-h-[36px] ${asistencia.status === 'asistio' ? 'bg-green-100 text-green-700 border-green-300' : ''}`}
+                        >
+                          <IconComponent className={`w-4 h-4 mr-1 ${asistencia.color}`} />
+                          {asistencia.label}
+                        </Badge>
 
                       </div>
 
@@ -615,21 +615,21 @@ function AlumnosList({
                         </>
                       )}
 
-                       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                         <span className={`font-medium ${classroomInfo ? classroomInfo.textColor : 'text-gray-600'}`}>
-                           <strong>Salón:</strong> {getClassroomName(alumno)}
-                         </span>
-                         <span className="hidden sm:flex">•</span>
-                         <span>
-                           <strong>Inscrito:</strong> {new Date(alumno.fecha_inscripcion).toLocaleDateString('es-ES', {
-                             day: '2-digit',
-                             month: '2-digit',
-                             year: 'numeric',
-                             hour: '2-digit',
-                             minute: '2-digit'
-                           })}
-                         </span>
-                       </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                        <span className={`font-medium ${classroomInfo ? classroomInfo.textColor : 'text-gray-600'}`}>
+                          <strong>Salón:</strong> {getClassroomName(alumno)}
+                        </span>
+                        <span className="hidden sm:flex">•</span>
+                        <span>
+                          <strong>Inscrito:</strong> {new Date(alumno.fecha_inscripcion).toLocaleDateString('es-ES', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>

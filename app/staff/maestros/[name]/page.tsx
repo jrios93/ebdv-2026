@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { StaffGuard } from "@/components/StaffGuard"
-import { Search, ArrowLeft, Users, Star, Award, RotateCcw, Filter, CheckCircle, Clock } from "lucide-react"
+import { Search, ArrowLeft, Users, Star, Award, RotateCcw, Filter, CheckCircle, Clock, Zap } from "lucide-react"
 import { getClassroomInfo } from "@/lib/classroom"
 import {
   getAlumnosByClassroom,
@@ -171,16 +171,27 @@ export default function MaestrosClassroomPage({ params }: { params: Promise<{ na
                     {pendientesCount} pendientes
                   </Badge>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={reload}
-                  disabled={isLoading}
-                  className="h-8 px-3 text-xs gap-1"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  {isLoading ? 'Actualizando...' : 'Actualizar'}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => router.push(`/staff/maestros/${classroomName}/evaluacion-rapida`)}
+                    className="h-8 px-3 text-xs gap-1 bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Zap className="w-3 h-3" />
+                    Evaluación Rápida
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={reload}
+                    disabled={isLoading}
+                    className="h-8 px-3 text-xs gap-1"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    {isLoading ? 'Actualizando...' : 'Actualizar'}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

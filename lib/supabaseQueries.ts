@@ -99,7 +99,7 @@ export async function getAlumnoById(id: string): Promise<Alumno | null> {
       return null
       throw error
     }
-    
+
     return data
   } catch (error) {
     console.error('Error fetching alumno:', error)
@@ -244,29 +244,29 @@ export async function getStatsDashboard(): Promise<{
 }> {
   try {
     const today = new Date().toISOString().split('T')[0]
-    
+
     // Total alumnos activos
     const { count: totalAlumnos } = await supabase
       .from('alumnos')
       .select('*', { count: 'exact', head: true })
       .eq('activo', true)
-    
+
     // Evaluaciones individuales hoy
     const { count: evaluacionesHoy } = await supabase
       .from('puntuacion_individual_diaria')
       .select('*', { count: 'exact', head: true })
       .eq('fecha', today)
-    
+
     // Promedio de puntualidad y asistencia hoy
     const { data: puntualidadData } = await supabase
       .from('puntuacion_individual_diaria')
       .select('puntualidad_asistencia')
       .eq('fecha', today)
-    
+
     const puntualidadAsistencia = puntualidadData && puntualidadData.length > 0
       ? puntualidadData.reduce((sum, p) => sum + p.puntualidad_asistencia, 0) / puntualidadData.length
       : 0
-    
+
     // Calcular mejor classroom (basado en evaluaciones grupales)
     const { data: grupalesHoy } = await supabase
       .from('v_promedios_diarios')
@@ -277,17 +277,17 @@ export async function getStatsDashboard(): Promise<{
       `)
       .eq('fecha', today)
       .eq('estado', 'completado')
-    
+
     let mejorClassroom = null
     if (grupalesHoy && grupalesHoy.length > 0) {
       const scores = grupalesHoy.reduce((acc, grupal: any) => {
         acc[grupal.classroom_nombre] = grupal.puntaje_total_promedio
         return acc
       }, {} as Record<string, number>)
-      
+
       mejorClassroom = Object.entries(scores).reduce((a, b) => scores[a[0]] > scores[b[0]] ? a : b)[0]
     }
-    
+
     return {
       totalAlumnos: totalAlumnos || 0,
       evaluacionesHoy: evaluacionesHoy || 0,
@@ -315,7 +315,7 @@ export async function getTopAlumnosToday(limit: number = 5): Promise<Array<{
   try {
     const today = new Date().toISOString().split('T')[0]
     console.log('🔍 Buscando top alumnos para fecha:', today)
-    
+
     const { data, error } = await supabase
       .from('puntuacion_individual_diaria')
       .select(`
@@ -331,23 +331,23 @@ export async function getTopAlumnosToday(limit: number = 5): Promise<Array<{
       `)
       .eq('fecha', today)
       .order('creado_el', { ascending: false })
-    
+
     if (error) {
       console.error('❌ Error en consulta top alumnos:', error)
       throw error
     }
-    
+
     console.log('📊 Datos top alumnos encontrados:', data)
-    
+
     if (!data || data.length === 0) {
       console.log('📭 No hay evaluaciones hoy')
       return null
     }
-    
+
     // Calcular puntos totales y ordenar
     const alumnosConPuntos = data.map(item => {
-      const total = item.actitud + item.puntualidad_asistencia + item.animo + 
-                   item.trabajo_manual + item.verso_memoria + item.aprestamiento_biblico
+      const total = item.actitud + item.puntualidad_asistencia + item.animo +
+        item.trabajo_manual + item.verso_memoria + item.aprestamiento_biblico
       return {
         alumno: {
           id: item.alumnos.id,
@@ -365,7 +365,7 @@ export async function getTopAlumnosToday(limit: number = 5): Promise<Array<{
         evaluacion: item
       }
     }).sort((a, b) => b.totalPuntos - a.totalPuntos)
-    
+
     return alumnosConPuntos.slice(0, limit)
   } catch (error) {
     console.error('Error getting top alumnos:', error)
@@ -380,7 +380,7 @@ export async function getTopInvitadosToday(limit: number = 3): Promise<Array<{
   try {
     const today = new Date().toISOString().split('T')[0]
     console.log('📋 Buscando invitados para fecha:', today)
-    
+
     const { data, error } = await supabase
       .from('puntuacion_individual_diaria')
       .select(`
@@ -398,19 +398,19 @@ export async function getTopInvitadosToday(limit: number = 3): Promise<Array<{
       .gt('invitados_hoy', 0)
       .order('invitados_hoy', { ascending: false })
       .limit(limit)
-    
+
     if (error) {
       console.error('❌ Error en consulta invitados:', error)
       throw error
     }
-    
+
     console.log('📊 Datos invitados encontrados:', data)
-    
+
     if (!data || data.length === 0) {
       console.log('📭 No hay invitados hoy')
       return null
     }
-    
+
     const result = data.map((item: any) => ({
       alumno: {
         id: item.alumnos.id,
@@ -426,7 +426,7 @@ export async function getTopInvitadosToday(limit: number = 3): Promise<Array<{
       },
       invitados: item.invitados_hoy
     }))
-    
+
     console.log('✅ Resultado procesado:', result)
     return result
   } catch (error) {
@@ -451,7 +451,7 @@ export async function getAllEvaluacionesToday(): Promise<Array<{
   try {
     const today = new Date().toISOString().split('T')[0]
     console.log('🔍 Buscando todas las evaluaciones para exportar, fecha:', today)
-    
+
     const { data, error } = await supabase
       .from('puntuacion_individual_diaria')
       .select(`
@@ -471,22 +471,22 @@ export async function getAllEvaluacionesToday(): Promise<Array<{
         )
       `)
       .eq('fecha', today)
-    
+
     if (error) {
       console.error('❌ Error en consulta todas evaluaciones:', error)
       throw error
     }
-    
+
     console.log('📊 Todas las evaluaciones encontradas:', data)
-    
+
     if (!data || data.length === 0) {
       console.log('📭 No hay evaluaciones para exportar')
       return null
     }
-    
+
     return data.map((item: any) => {
-      const total = item.actitud + item.puntualidad_asistencia + item.animo + 
-                   item.trabajo_manual + item.verso_memoria + item.aprestamiento_biblico
+      const total = item.actitud + item.puntualidad_asistencia + item.animo +
+        item.trabajo_manual + item.verso_memoria + item.aprestamiento_biblico
       return {
         alumno: `${item.alumnos.nombre} ${item.alumnos.apellidos}`,
         salon: item.alumnos.classrooms.nombre,
@@ -565,28 +565,28 @@ export async function getAllSalonesEvaluadosToday(): Promise<Array<{
 }> | null> {
   try {
     const today = new Date().toISOString().split('T')[0]
-    
+
     // Obtener todos los salones
     const { data: allClassrooms } = await supabase
       .from('classrooms')
       .select('id, nombre')
       .eq('activo', true)
-    
+
     if (!allClassrooms) return null
-    
+
     // Obtener evaluaciones grupales
     const { data: grupalesData } = await supabase
       .from('puntuacion_grupal_diaria')
       .select('*')
       .eq('fecha', today)
-    
+
     return allClassrooms.map((classroom: any) => {
       const evaluacion = grupalesData?.find((g: any) => g.classroom_id === classroom.id)
-      const total = evaluacion ? 
-        evaluacion.puntualidad + evaluacion.animo_y_barras + 
+      const total = evaluacion ?
+        evaluacion.puntualidad + evaluacion.animo_y_barras +
         evaluacion.orden + evaluacion.verso_memoria + evaluacion.preguntas_correctas
         : 0
-      
+
       return {
         salon: classroom.nombre,
         puntualidad: evaluacion?.puntualidad || 0,
@@ -612,7 +612,7 @@ export async function getClassroomRankingToday(): Promise<Array<{
 }> | null> {
   try {
     const today = new Date().toISOString().split('T')[0]
-    
+
     const { data, error } = await supabase
       .from('puntuacion_individual_diaria')
       .select(`
@@ -620,26 +620,26 @@ export async function getClassroomRankingToday(): Promise<Array<{
         alumnos!inner(classroom_id, classrooms!classroom_id(nombre))
       `)
       .eq('fecha', today)
-    
+
     if (error) throw error
-    
+
     if (!data || data.length === 0) return null
-    
+
     // Agrupar por classroom
     const classroomScores = data.reduce((acc, item: any) => {
       const classroomName = item.alumnos.classrooms.nombre
-      const total = item.actitud + item.puntualidad_asistencia + item.animo + 
-                   item.trabajo_manual + item.verso_memoria + item.aprestamiento_biblico
-      
+      const total = item.actitud + item.puntualidad_asistencia + item.animo +
+        item.trabajo_manual + item.verso_memoria + item.aprestamiento_biblico
+
       if (!acc[classroomName]) {
         acc[classroomName] = { total: 0, count: 0 }
       }
       acc[classroomName].total += total
       acc[classroomName].count += 1
-      
+
       return acc
     }, {} as Record<string, { total: number; count: number }>)
-    
+
     // Convertir a array y ordenar
     const ranking = Object.entries(classroomScores)
       .map(([classroom, scores]: [string, any]) => ({
@@ -648,7 +648,7 @@ export async function getClassroomRankingToday(): Promise<Array<{
         evaluaciones: scores.count
       }))
       .sort((a, b) => b.totalPuntos - a.totalPuntos)
-    
+
     return ranking
   } catch (error) {
     console.error('Error getting classroom ranking:', error)
@@ -714,14 +714,14 @@ export async function getClassroomIdByName(nombre: string): Promise<string | nul
     // Lista hardcoded con los IDs reales de tu DB
     const classroomIds: Record<string, string> = {
       vida: "eda65bd9-dadd-4f74-954e-b952a91845a3",
-      luz: "d863c43d-9b83-494a-a88b-c3973a31bfd7", 
+      luz: "d863c43d-9b83-494a-a88b-c3973a31bfd7",
       gracia: "9b8a58b3-6356-4b75-b28b-d5f5d8e596fd",
       verdad: "5272477b-26a4-4179-a276-1c4730238974"
     }
-    
+
     const id = classroomIds[nombre.toLowerCase()]
     console.log(`🎯getClassroomIdByName: ${nombre} → ${id}`)
-    
+
     return id || null
   } catch (error) {
     console.error('Error getting classroom ID by name:', error)
@@ -736,7 +736,7 @@ export async function getStatsGenerales(): Promise<{
   evaluadosHoy: number
 }> {
   const today = new Date().toISOString().split('T')[0]
-  
+
   try {
     // Total alumnos activos
     const { count: totalAlumnos } = await supabase
@@ -762,7 +762,7 @@ export async function getStatsGenerales(): Promise<{
       .select('alumno_id')
       .eq('fecha', today)
 
-    const evaluadosHoy = evaluadosUnicos ? 
+    const evaluadosHoy = evaluadosUnicos ?
       new Set(evaluadosUnicos.map(e => e.alumno_id)).size : 0
 
     return {
@@ -789,7 +789,7 @@ export async function getAlumnosPorSalon(): Promise<Array<{
 }> | null> {
   try {
     const today = new Date().toISOString().split('T')[0]
-    
+
     // Obtener todos los alumnos activos
     const { data: alumnos, error: errorAlumnos } = await supabase
       .from('alumnos')
@@ -798,9 +798,9 @@ export async function getAlumnosPorSalon(): Promise<Array<{
         classrooms!classroom_id(nombre)
       `)
       .eq('activo', true)
-    
+
     if (errorAlumnos) throw errorAlumnos
-    
+
     // Obtener evaluaciones de hoy para ver quiénes asistieron
     const { data: evaluacionesHoy, error: evaluacionesError } = await supabase
       .from('puntuacion_individual_diaria')
@@ -810,36 +810,36 @@ export async function getAlumnosPorSalon(): Promise<Array<{
       `)
       .eq('fecha', today)
       .gte('puntualidad_asistencia', 1) // Solo los que tienen puntualidad > 0
-    
+
     if (evaluacionesError) throw evaluacionesError
-    
+
     // Crear set de IDs de alumnos que asistieron hoy
     const asistenciasSet = new Set(evaluacionesHoy?.map(e => e.alumno_id) || [])
-    
+
     // Agrupar por salón y contar tanto inscritos como asistidos
     const conteo = alumnos?.reduce((acc: Record<string, { inscritos: number, asistidos: number }>, alumno: any) => {
       const salon = alumno.classrooms?.nombre || 'Sin asignar'
-      
+
       if (!acc[salon]) {
         acc[salon] = { inscritos: 0, asistidos: 0 }
       }
-      
+
       acc[salon].inscritos += 1
-      
+
       // Si este alumno asistió hoy
       if (asistenciasSet.has(alumno.id)) {
         acc[salon].asistidos += 1
       }
-      
+
       return acc
     }, {})
-    
+
     // Convertir a array y ordenar
     return Object.entries(conteo || {})
-      .map(([salon, datos]) => ({ 
-        salon, 
-        cantidad: (datos as any).inscritos, 
-        asistidos: (datos as any).asistidos 
+      .map(([salon, datos]) => ({
+        salon,
+        cantidad: (datos as any).inscritos,
+        asistidos: (datos as any).asistidos
       }))
       .sort((a, b) => b.cantidad - a.cantidad)
   } catch (error) {
@@ -873,9 +873,10 @@ export async function getResumenSemanal(): Promise<{
     const diff = monday.getDate() - day + (day === 0 ? -6 : 1) // Ajustar para que lunes = 1
     monday.setDate(diff)
     const fechaInicio = monday.toISOString().split('T')[0]
-    
+    const todayStr = today.toISOString().split('T')[0]
+
     console.log('📊 Obteniendo resumen semanal desde:', fechaInicio)
-    
+
     // 1. Ranking individual de alumnos
     const { data: datosIndividuales, error: errorIndividual } = await supabase
       .from('puntuacion_individual_diaria')
@@ -889,15 +890,15 @@ export async function getResumenSemanal(): Promise<{
           classrooms!classroom_id(nombre)
         )
       `)
-      .gte('fecha', fechaInicio)
-    
+      .gte('fecha', fechaInicio).lte('fecha', todayStr)
+
     if (errorIndividual) {
       console.error('Error en consulta individual:', errorIndividual)
       throw errorIndividual
     }
-    
+
     console.log('📊 Datos individuales encontrados:', datosIndividuales?.length)
-    
+
     // Agrupar por alumno y calcular totales
     const scoresAlumnos = datosIndividuales?.reduce((acc: Record<string, any>, item: any) => {
       // Validar que exista el alumno
@@ -905,7 +906,7 @@ export async function getResumenSemanal(): Promise<{
         console.warn('⚠️ Item sin datos de alumno:', item)
         return acc
       }
-      
+
       const alumnoId = item.alumnos.id
       if (!acc[alumnoId]) {
         acc[alumnoId] = {
@@ -914,20 +915,20 @@ export async function getResumenSemanal(): Promise<{
           totalInvitados: 0
         }
       }
-      
-      acc[alumnoId].totalPuntos += 
-        (item.actitud || 0) + 
-        (item.puntualidad_asistencia || 0) + 
-        (item.animo || 0) + 
-        (item.trabajo_manual || 0) + 
-        (item.verso_memoria || 0) + 
+
+      acc[alumnoId].totalPuntos +=
+        (item.actitud || 0) +
+        (item.puntualidad_asistencia || 0) +
+        (item.animo || 0) +
+        (item.trabajo_manual || 0) +
+        (item.verso_memoria || 0) +
         (item.aprestamiento_biblico || 0)
-      
+
       acc[alumnoId].totalInvitados += (item.invitados_hoy || 0)
-      
+
       return acc
     }, {})
-    
+
     // Ranking general de alumnos (para otros usos)
     const rankingGeneralAlumnos = Object.values(scoresAlumnos || {})
       .sort((a: any, b: any) => b.totalPuntos - a.totalPuntos)
@@ -952,7 +953,7 @@ export async function getResumenSemanal(): Promise<{
         ...item,
         posicion: index + 1
       }))
-    
+
     // 2. Ranking de salones
     const { data: datosGrupales, error: grupalError } = await supabase
       .from('puntuacion_grupal_diaria')
@@ -961,38 +962,38 @@ export async function getResumenSemanal(): Promise<{
         classrooms!inner(nombre)
       `)
       .gte('fecha', fechaInicio)
-    
+
     if (grupalError) {
       console.error('Error en consulta grupal:', grupalError)
       throw grupalError
     }
-    
+
     console.log('📊 Datos grupales encontrados:', datosGrupales?.length)
-    
+
     // Para cada salón, guardamos suma y conteo para calcular promedio
-    const scoresSalones = datosGrupales?.reduce((acc: Record<string, {suma: number, conteo: number}>, item: any) => {
+    const scoresSalones = datosGrupales?.reduce((acc: Record<string, { suma: number, conteo: number }>, item: any) => {
       // Validar que exista el salón
       if (!item.classrooms || !item.classrooms.nombre) {
         console.warn('⚠️ Item sin datos de salón:', item)
         return acc
       }
-      
+
       const salon = item.classrooms.nombre
       const total = (item.puntualidad || 0) + (item.animo_y_barras || 0) + (item.orden || 0) + (item.verso_memoria || 0) + (item.preguntas_correctas || 0)
-      
+
       if (!acc[salon]) {
         acc[salon] = { suma: 0, conteo: 0 }
       }
-      
+
       acc[salon].suma += total
       acc[salon].conteo += 1
-      
+
       return acc
     }, {})
-    
+
     const rankingSalones = Object.entries(scoresSalones || {})
-      .map(([salon, datos]) => ({ 
-        salon, 
+      .map(([salon, datos]) => ({
+        salon,
         totalPuntos: Number(datos.suma),
         promedioPuntos: Number((datos.suma / datos.conteo).toFixed(2)),
         diasEvaluados: datos.conteo
@@ -1002,19 +1003,22 @@ export async function getResumenSemanal(): Promise<{
         ...item,
         posicion: index + 1
       }))
-    
+
     console.log('📊 Rankings procesados:', {
       rankingAlumnos: rankingAlumnos.length,
       rankingSalones: rankingSalones.length
     })
-    
+
     // 3. Campeón de invitados
-    const campeonInvitados = rankingAlumnos.length > 0 && rankingAlumnos.some(a => a.totalInvitados > 0)
-      ? rankingAlumnos.reduce((a, b) => a.totalInvitados > b.totalInvitados ? a : b)
+    const alumnosConInvitados = rankingGeneralAlumnos.filter((a: any) => a.totalInvitados > 0)
+
+    const campeonInvitados = alumnosConInvitados.length > 0
+      ? alumnosConInvitados.reduce((a: any, b: any) =>
+        a.totalInvitados > b.totalInvitados ? a : b
+      )
       : null
-    
     console.log('📊 Campeón invitados:', campeonInvitados ? `${campeonInvitados.alumno.nombre} - ${campeonInvitados.totalInvitados} invitados` : 'Ninguno')
-    
+
     return {
       rankingAlumnos,
       rankingSalones,
