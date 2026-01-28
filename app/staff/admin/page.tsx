@@ -10,7 +10,6 @@ import { saveAs } from 'file-saver'
 import {
   getStatsDashboard,
   getTopAlumnosToday,
-  getClassroomRankingToday,
   getTopInvitadosToday,
   getAllEvaluacionesToday,
   getAllSalonesEvaluadosToday,
@@ -29,6 +28,7 @@ import { useManualLoad } from "@/hooks/useManualLoad"
 import { FaBible, FaDove, FaSeedling } from "react-icons/fa"
 import { IoSunnySharp } from "react-icons/io5"
 import { exportarSemanaCompleta } from "@/lib/exports"
+import { getFechaHoyPeru } from "@/lib/date/config"
 
 interface Stats {
   totalAlumnos: number
@@ -39,47 +39,15 @@ interface Stats {
 }
 
 export default function AdminPage() {
-  // Carga manual de datos del dashboard
-  const loadDashboardData = async () => {
-    try {
-      const [statsData, alumnosData, rankingData, invitadosData, salonData, semanalData, invitadosRankingData, campeonData, totalInvitadosData] = await Promise.all([
-        getStatsDashboard(),
-        getTopAlumnosToday(5),
-        getClassroomRankingToday(),
-        getTopInvitadosToday(3),
-        getAlumnosPorSalon(),
-        getResumenSemanal(),
-        getRankingInvitados(7),
-        getCampeonInvitados(7),
-        getTotalInvitadosPeriodo(7)
-      ])
-
-      return {
-        stats: statsData,
-        topAlumnos: alumnosData || [],
-        classroomRanking: rankingData || [],
-        topInvitados: invitadosData || [],
-        alumnosPorSalon: salonData || [],
-        resumenSemanal: semanalData,
-        rankingInvitados: invitadosRankingData || [],
-        campeonInvitadosActual: campeonData,
-        totalInvitadosPeriodo: totalInvitadosData || 0
-      }
-    } catch (error) {
-      console.error('Error loading dashboard:', error)
-      throw error
-    }
-  }
 
   const reloadRef = useRef<() => Promise<any>>(() => Promise.resolve())
 
   const { data: dashboardData, loading: isLoading, lastUpdate, reload } = useManualLoad(async () => {
     const loadData = async () => {
       try {
-        const [statsData, alumnosData, rankingData, invitadosData, salonData, semanalData, invitadosRankingData, campeonData, totalInvitadosData] = await Promise.all([
+        const [statsData, alumnosData, invitadosData, salonData, semanalData, invitadosRankingData, campeonData, totalInvitadosData] = await Promise.all([
           getStatsDashboard(),
           getTopAlumnosToday(5),
-          getClassroomRankingToday(),
           getTopInvitadosToday(3),
           getAlumnosPorSalon(),
           getResumenSemanal(),
@@ -88,10 +56,11 @@ export default function AdminPage() {
           getTotalInvitadosPeriodo(7)
         ])
 
+
+
         return {
           stats: statsData,
           topAlumnos: alumnosData || [],
-          classroomRanking: rankingData || [],
           topInvitados: invitadosData || [],
           alumnosPorSalon: salonData || [],
           resumenSemanal: semanalData,
@@ -201,7 +170,6 @@ export default function AdminPage() {
     puntualidadAsistencia: 0
   }
   const topAlumnos = dashboardData?.topAlumnos || []
-  const classroomRanking = dashboardData?.classroomRanking || []
   const topInvitados = dashboardData?.topInvitados || []
   const alumnosPorSalon = dashboardData?.alumnosPorSalon || []
   const resumenSemanal = dashboardData?.resumenSemanal || {
@@ -229,7 +197,7 @@ export default function AdminPage() {
       const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
       const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
 
-      const fileName = `evaluaciones_${new Date().toISOString().split('T')[0]}.xlsx`
+      const fileName = `evaluaciones_${getFechaHoyPeru()}.xlsx`
       saveAs(blob, fileName)
     } catch (error) {
       console.error('Error exportando evaluaciones:', error)
@@ -255,7 +223,7 @@ export default function AdminPage() {
       const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
       const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
 
-      const fileName = `salones_${new Date().toISOString().split('T')[0]}.xlsx`
+      const fileName = `salones_${getFechaHoyPeru()}.xlsx`
       saveAs(blob, fileName)
     } catch (error) {
       console.error('Error exportando salones:', error)
@@ -346,7 +314,7 @@ export default function AdminPage() {
                           <IconComponent className="w-10 h-10 mx-auto mb-3" />
                           <div className="text-3xl font-bold mb-1 text-red-600">{salon.asistidos}</div>
                           <div className="text-sm capitalize font-medium">{salon.salon}</div>
-                          <div className="text-xs opacity-75 mb-2">ASISTIDOS HOY</div>
+                          <div className="text-xs opacity-75 mb-2">ASISTIDOS </div>
                           <div className="flex items-center justify-center gap-2">
                             <div className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
                               📋 {salon.cantidad} inscritos
@@ -536,17 +504,17 @@ export default function AdminPage() {
                 <CardContent>
                   {isLoading ? (
                     <div className="text-center py-8">Cargando datos...</div>
-                  ) : resumenSemanal.campeonInvitados ? (
+                  ) : campeonInvitadosActual ? (
                     <div className="bg-white rounded-xl p-6 border-2 border-purple-300 shadow-lg">
                       <div className="text-center">
                         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white text-3xl shadow-xl mx-auto mb-4 animate-pulse">
                           👑
                         </div>
                         <h3 className="font-bold text-xl mb-2 text-purple-900">
-                          {resumenSemanal.campeonInvitados.alumno.nombre} {resumenSemanal.campeonInvitados.alumno.apellidos}
+                          {campeonInvitadosActual.alumno.nombre} {campeonInvitadosActual.alumno.apellidos}
                         </h3>
                         <p className="text-2xl text-purple-600 font-bold mb-3">
-                          🎉 {resumenSemanal.campeonInvitados.totalInvitados} invitados esta semana
+                          🎉 {campeonInvitadosActual.totalInvitados} invitados esta semana
                         </p>
                         <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-3 border border-purple-200">
                           <p className="text-sm font-semibold text-purple-700">🏆 PREMIO ESPECIAL</p>

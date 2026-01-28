@@ -1,4 +1,6 @@
 import { supabase } from '@/lib/supabase'
+import { getFechaHoyPeru } from '@/lib/date/config'
+import { getRankingInvitados } from '@/lib/invitados'
 
 // Tipos basados en tu documentación
 export interface Alumno {
@@ -243,7 +245,7 @@ export async function getStatsDashboard(): Promise<{
   puntualidadAsistencia: number
 }> {
   try {
-    const today = new Date().toISOString().split('T')[0]
+    const today = getFechaHoyPeru()
 
     // Total alumnos activos
     const { count: totalAlumnos } = await supabase
@@ -276,7 +278,7 @@ export async function getStatsDashboard(): Promise<{
         estado
       `)
       .eq('fecha', today)
-      .eq('estado', 'completado')
+      // Mostrar todos los salones evaluados hoy (completado + en_progreso)
 
     let mejorClassroom = null
     if (grupalesHoy && grupalesHoy.length > 0) {
@@ -313,7 +315,7 @@ export async function getTopAlumnosToday(limit: number = 5): Promise<Array<{
   evaluacion: PuntuacionIndividualDiaria
 }> | null> {
   try {
-    const today = new Date().toISOString().split('T')[0]
+    const today = getFechaHoyPeru()
     console.log('🔍 Buscando top alumnos para fecha:', today)
 
     const { data, error } = await supabase
@@ -378,7 +380,7 @@ export async function getTopInvitadosToday(limit: number = 3): Promise<Array<{
   invitados: number
 }> | null> {
   try {
-    const today = new Date().toISOString().split('T')[0]
+    const today = getFechaHoyPeru()
     console.log('📋 Buscando invitados para fecha:', today)
 
     const { data, error } = await supabase
@@ -449,7 +451,7 @@ export async function getAllEvaluacionesToday(): Promise<Array<{
   total_puntos: number
 }> | null> {
   try {
-    const today = new Date().toISOString().split('T')[0]
+    const today = getFechaHoyPeru()
     console.log('🔍 Buscando todas las evaluaciones para exportar, fecha:', today)
 
     const { data, error } = await supabase
@@ -564,7 +566,7 @@ export async function getAllSalonesEvaluadosToday(): Promise<Array<{
   evaluado: boolean
 }> | null> {
   try {
-    const today = new Date().toISOString().split('T')[0]
+    const today = getFechaHoyPeru()
 
     // Obtener todos los salones
     const { data: allClassrooms } = await supabase
@@ -611,7 +613,7 @@ export async function getClassroomRankingToday(): Promise<Array<{
   evaluaciones: number
 }> | null> {
   try {
-    const today = new Date().toISOString().split('T')[0]
+    const today = getFechaHoyPeru()
 
     const { data, error } = await supabase
       .from('puntuacion_individual_diaria')
@@ -640,14 +642,18 @@ export async function getClassroomRankingToday(): Promise<Array<{
       return acc
     }, {} as Record<string, { total: number; count: number }>)
 
-    // Convertir a array y ordenar
-    const ranking = Object.entries(classroomScores)
-      .map(([classroom, scores]: [string, any]) => ({
-        classroom,
-        totalPuntos: scores.total,
-        evaluaciones: scores.count
-      }))
+    // Definir todos los salones existentes
+    const allClassrooms = ['vida', 'luz', 'gracia', 'verdad']
+
+    // Convertir a array y asegurar que todos los salones estén presentes
+    const ranking = allClassrooms.map(classroom => ({
+      classroom,
+      totalPuntos: classroomScores[classroom]?.total || 0,
+      evaluaciones: classroomScores[classroom]?.count || 0
+    }))
       .sort((a, b) => b.totalPuntos - a.totalPuntos)
+
+    console.log('📊 Ranking de salones hoy:', ranking)
 
     return ranking
   } catch (error) {
@@ -788,7 +794,22 @@ export async function getAlumnosPorSalon(): Promise<Array<{
   asistidos: number
 }> | null> {
   try {
-    const today = new Date().toISOString().split('T')[0]
+    const today = getFechaHoyPeru()
+
+    // Primero, encontrar el último día con evaluaciones (puede ser hoy o ayer)
+    const { data: diasConEvaluaciones, error: diasError } = await supabase
+      .from('puntuacion_individual_diaria')
+      .select('fecha')
+      .gte('fecha', '2026-01-25') // Últimos días
+      .order('fecha', { ascending: false })
+      .limit(1)
+    
+    if (diasError) throw diasError
+    
+    // Usar el último día con evaluaciones, si no hay datos usar hoy
+    const fechaConDatos = diasConEvaluaciones && diasConEvaluaciones.length > 0 
+      ? diasConEvaluaciones[0].fecha 
+      : today
 
     // Obtener todos los alumnos activos
     const { data: alumnos, error: errorAlumnos } = await supabase
@@ -801,17 +822,22 @@ export async function getAlumnosPorSalon(): Promise<Array<{
 
     if (errorAlumnos) throw errorAlumnos
 
-    // Obtener evaluaciones de hoy para ver quiénes asistieron
+    // Obtener evaluaciones del día con datos para ver quiénes asistieron
+    // Si un alumno tiene CUALQUIER calificación, cuenta como asistencia (incluso si es 0)
     const { data: evaluacionesHoy, error: evaluacionesError } = await supabase
       .from('puntuacion_individual_diaria')
       .select(`
-        alumno_id,
-        puntualidad_asistencia
+        alumno_id
       `)
-      .eq('fecha', today)
-      .gte('puntualidad_asistencia', 1) // Solo los que tienen puntualidad > 0
+      .eq('fecha', fechaConDatos) // Usar el día que realmente tiene datos
 
     if (evaluacionesError) throw evaluacionesError
+
+    // DEBUG: Mostrar qué está pasando
+    console.log('🔍 DEBUG - getAlumnosPorSalon():')
+    console.log('📅 Fecha Usando:', fechaConDatos)
+    console.log('📝 Total Evaluaciones Hoy:', evaluacionesHoy?.length)
+    console.log('👥 Alumnos con Evaluaciones Hoy:', Array.from(new Set(evaluacionesHoy?.map(e => e.alumno_id))))
 
     // Crear set de IDs de alumnos que asistieron hoy
     const asistenciasSet = new Set(evaluacionesHoy?.map(e => e.alumno_id) || [])
@@ -1009,15 +1035,36 @@ export async function getResumenSemanal(): Promise<{
       rankingSalones: rankingSalones.length
     })
 
-    // 3. Campeón de invitados
+    // 3. Campeón de invitados - Mantener la lógica original para no romper tipos
     const alumnosConInvitados = rankingGeneralAlumnos.filter((a: any) => a.totalInvitados > 0)
-
+    
+    console.log('🔍 DEBUG: Ranking completo de alumnos con invitaciones:')
+    rankingGeneralAlumnos.forEach((alumno: any, index) => {
+      if (alumno.totalInvitados > 0) {
+        console.log(`   ${index + 1}. ${alumno.alumno.nombre} ${alumno.alumno.apellidos}: ${alumno.totalInvitados} invitados (Salón: ${alumno.alumno.classrooms?.nombre || 'N/A'})`)
+      }
+    })
+    
     const campeonInvitados = alumnosConInvitados.length > 0
       ? alumnosConInvitados.reduce((a: any, b: any) =>
         a.totalInvitados > b.totalInvitados ? a : b
       )
       : null
-    console.log('📊 Campeón invitados:', campeonInvitados ? `${campeonInvitados.alumno.nombre} - ${campeonInvitados.totalInvitados} invitados` : 'Ninguno')
+    console.log('🔍 DEBUG: Ranking completo de alumnos con invitaciones:')
+    rankingGeneralAlumnos.forEach((alumno: any, index) => {
+      if (alumno.totalInvitados > 0) {
+        console.log(`   ${index + 1}. ${alumno.alumno.nombre} ${alumno.alumno.apellidos}: ${alumno.totalInvitados} invitaciones (Salón: ${alumno.alumno.classrooms?.nombre || 'N/A'})`)
+      }
+    })
+    
+    console.log('📊 Campeón invitados (selección por reducer):')
+    if (campeonInvitados) {
+      console.log(`   🏆 ${campeonInvitados.alumno.nombre} ${campeonInvitados.alumno.apellidos} (${campeonInvitados.totalInvitados} invitados)`)
+      console.log(`   👥 Salón: ${campeonInvitados.alumno.classrooms?.nombre || 'N/A'}`)
+      console.log(`   🆔 ID: ${campeonInvitados.alumno.id}`)
+    } else {
+      console.log('   ❌ No hay campeón')
+    }
 
     return {
       rankingAlumnos,

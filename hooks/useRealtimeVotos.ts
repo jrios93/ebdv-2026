@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getFechaHoyPeru } from '@/lib/date/config'
 
 export interface VotoJurado {
   id: string
@@ -29,7 +30,7 @@ export interface PuntuacionPromedio {
   ultima_actualizacion?: string
 }
 
-export function useRealtimeVotos(classroomId?: string, fecha: string = new Date().toISOString().split('T')[0]) {
+export function useRealtimeVotos(classroomId?: string, fecha: string = getFechaHoyPeru()) {
   const [votos, setVotos] = useState<VotoJurado[]>([])
   const [promedio, setPromedio] = useState<PuntuacionPromedio | null>(null)
   const [loading, setLoading] = useState(true)
