@@ -293,7 +293,7 @@ SELECT * FROM v_ranking_individual WHERE nombre = 'Juan';
 -- 4. Probar puntuación grupal
 INSERT INTO puntuacion_grupal_diaria (
     classroom_id, fecha, puntualidad, animo_y_barras, 
-    orden, verso_memoria, preguntas_correctas, jurado_registro_id
+    orden, verso_memoria, preguntas_correctas, jurado_id
 ) VALUES (
     (SELECT id FROM classrooms WHERE nombre = 'Luz'),
     CURRENT_DATE, 8, 15, 18, 17, 2,

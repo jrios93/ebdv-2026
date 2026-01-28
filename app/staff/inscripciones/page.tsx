@@ -49,6 +49,9 @@ export default function ReportesPage() {
   console.log('🔍 Filtros aplicados:', filters())
 
   const { alumnos, loading, error, refrescar } = useRealtimeInscripciones(filters())
+  
+  // Obtener todos los alumnos sin filtros para los contadores
+  const { alumnos: todosLosAlumnos } = useRealtimeInscripciones({})
 
   useEffect(() => {
     // Cargar evaluaciones del día para mostrar asistencia
@@ -118,20 +121,23 @@ export default function ReportesPage() {
   }
 
   const getStatsByClassroom = () => {
+    // Usar todosLosAlumnos para los conteos en tabs (sin filtros)
+    const alumnosParaStats = todosLosAlumnos || []
+    
     const stats = Object.values(CLASSROOM_NAMES).reduce((acc: any, classroomId) => {
-      acc[classroomId] = alumnos.filter(a =>
+      acc[classroomId] = alumnosParaStats.filter(a =>
         a.classroom_id === classroomId || a.classroom_forzado_id === classroomId
       ).length
       return acc
     }, {})
 
     return {
-      total: alumnos.length,
-      hoy: alumnos.filter(a =>
+      total: alumnosParaStats.length,
+      hoy: alumnosParaStats.filter(a =>
         new Date(a.fecha_inscripcion).toDateString() === new Date().toDateString()
       ).length,
       asistidosHoy: Array.from(evaluacionesHoy).filter(id =>
-        alumnos.some(a => a.id === id)
+        alumnosParaStats.some(a => a.id === id)
       ).length,
       porSalon: stats
     }
@@ -285,25 +291,31 @@ export default function ReportesPage() {
 
           {/* Tabs por salón */}
           <Tabs value={classroomTab} onValueChange={setClassroomTab} className="w-full">
-            <TabsList className="grid w-full h-auto p-1 bg-gray-100 rounded-lg grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1">
+            <TabsList className="w-full h-auto p-1 bg-gray-100 rounded-lg grid grid-cols-3 gap-1">
               <TabsTrigger
                 value="todos"
-                className="text-base sm:text-lg py-3 px-4 h-auto min-h-[48px] data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md font-medium"
+                className="text-sm py-2.5 px-3 h-auto min-h-[40px] data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md font-medium flex items-center justify-center gap-2"
               >
-                Todos ({stats.total})
+                <span>Todos</span>
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold">
+                  {stats.total}
+                </span>
               </TabsTrigger>
               {Object.entries(CLASSROOM_NAMES).map(([name, id]) => (
                 <TabsTrigger
                   key={id}
                   value={id}
-                  className="text-base sm:text-lg py-3 px-4 h-auto min-h-[48px] data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md font-medium"
+                  className="text-sm py-2.5 px-3 h-auto min-h-[40px] data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md font-medium flex items-center justify-center gap-2"
                 >
-                  {name} ({stats.porSalon[id] || 0})
+                  <span>{name}</span>
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold">
+                    {stats.porSalon[id] || 0}
+                  </span>
                 </TabsTrigger>
               ))}
             </TabsList>
 
-            <TabsContent value="todos" className="mt-6">
+            <TabsContent value="todos" className="mt-8 sm:mt-6 mb-4 sm:mb-0">
               <AlumnosList
                 alumnos={alumnos}
                 loading={loading}
@@ -322,7 +334,7 @@ export default function ReportesPage() {
             </TabsContent>
 
             {Object.entries(CLASSROOM_NAMES).map(([name, id]) => (
-              <TabsContent key={id} value={id} className="mt-6">
+              <TabsContent key={id} value={id} className="mt-8 sm:mt-6 mb-4 sm:mb-0">
                 <AlumnosList
                   alumnos={alumnos.filter(a =>
                     a.classroom_id === id || a.classroom_forzado_id === id
@@ -420,15 +432,15 @@ function AlumnosList({
   }
 
   return (
-    <Card>
+    <Card className="mt-6 sm:mt-0">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="w-5 h-5 text-green-500" />
           Lista de Alumnos Inscritos ({alumnos.length})
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-6">
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 max-h-[800px] overflow-y-auto pr-2">
+      <CardContent className="p-4 sm:p-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 max-h-[800px] overflow-y-auto pr-2">
           {alumnos.map((alumno) => {
             const asistencia = getAsistenciaStatus(alumno)
             const IconComponent = asistencia.icon

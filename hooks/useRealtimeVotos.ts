@@ -102,8 +102,8 @@ export function useRealtimeVotos(classroomId?: string, fecha: string = new Date(
             setVotos(prev => prev.filter(voto => voto.id !== payload.old.id))
           }
           
-          // Recalcular promedio
-          cargarDatos()
+          // NO recargar datos automáticamente para evitar bucles infinitos
+          // cargarDatos() // Comentado para evitar el problema de bucle infinito en resultados
         }
       )
       .subscribe()

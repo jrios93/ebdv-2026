@@ -45,7 +45,7 @@ export interface PuntuacionGrupalDiaria {
   orden: number
   verso_memoria: number
   preguntas_correctas: number
-  jurado_registro_id?: string
+  jurado_id?: string
   created_at: string
 }
 

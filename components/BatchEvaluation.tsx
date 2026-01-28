@@ -206,15 +206,13 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
         }))
       }
 
-      // Mostrar toast de confirmación
+      // Mostrar indicador visual en lugar de toast
       const alumno = alumnos.find(a => a.id === alumnoId)
       const criterionOption = PUNTUACION_OPTIONS[field as keyof typeof PUNTUACION_OPTIONS]?.find(opt => opt.value === value)
 
-      toast.success(`✅ ${alumno?.nombre} - ${criterionOption?.label}`, {
-        description: `${field} guardado automáticamente`
-      })
+      console.log(`✅ ${alumno?.nombre} - ${criterionOption?.label} - ${field} guardado automáticamente`)
 
-      // Añadir a recent saves para feedback visual
+      // Añadir a recent saves para feedback visual extendido
       setRecentSaves(prev => new Set(prev).add(`${alumnoId}-${field}`))
       setTimeout(() => {
         setRecentSaves(prev => {
@@ -222,7 +220,7 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
           newSet.delete(`${alumnoId}-${field}`)
           return newSet
         })
-      }, 2000)
+      }, 3000) // Aumentado a 3 segundos para mejor visibilidad
 
     } catch (error) {
       console.error('Error saving evaluation:', error)
@@ -344,54 +342,56 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
   const stats = getStats()
 
   return (
-    <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header - Diseño mejorado */}
-        <div className="mb-6 bg-white rounded-lg shadow-sm border p-4">
-          <div className="flex items-center justify-between">
+        {/* Header - Diseño responsivo */}
+        <div className="bg-white rounded-xl shadow-sm border p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <Zap className="w-6 h-6 text-blue-600" />
-              <h1 className="text-2xl font-bold">Evaluación Rápida</h1>
+              <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
+              <h1 className="text-xl sm:text-2xl font-bold">Evaluación Rápida</h1>
             </div>
 
-            <Button variant="outline" size="sm" onClick={onBack}>
+            <Button variant="outline" size="sm" onClick={onBack} className="w-full sm:w-auto min-h-[44px] px-4 py-3">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Volver
             </Button>
           </div>
         </div>
 
-        {/* Estadísticas simplificadas */}
-        <Card className="shadow-sm mb-6">
-          <CardContent className="p-4">
-            <div className="flex flex-wrap items-center gap-6 text-base">
-              <span className="font-medium">
-                Total: <span className="text-blue-600">{stats.total}</span>
-              </span>
-              <span className="font-medium">
-                Evaluados: <span className="text-green-600">{stats.evaluated}</span>
-              </span>
-              <span className="font-medium">
-                Pendientes: <span className="text-orange-600">{stats.pending}</span>
-              </span>
+        {/* Estadísticas responsivas */}
+        <Card className="shadow-sm mb-4 sm:mb-6">
+          <CardContent className="p-4 sm:p-6">
+            <div className="grid grid-cols-3 gap-3 sm:gap-6 text-center sm:text-left">
+              <div className="text-center sm:text-left">
+                <div className="text-lg sm:text-xl font-semibold text-blue-600">{stats.total}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Total</div>
+              </div>
+              <div className="text-center sm:text-left">
+                <div className="text-lg sm:text-xl font-semibold text-green-600">{stats.evaluated}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Evaluados</div>
+              </div>
+              <div className="text-center sm:text-left">
+                <div className="text-lg sm:text-xl font-semibold text-orange-600">{stats.pending}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Pendientes</div>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Buscador */}
-        <Card className="shadow-sm mb-6">
-          <CardContent className="flex items-center justify-center mx-auto p-4 w-full">
-            <div className="relative flex-1 max-w-md md:w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+        {/* Buscador responsivo */}
+        <Card className="shadow-sm mb-4 sm:mb-6">
+          <CardContent className="p-4 sm:p-6">
+            <div className="relative w-full max-w-2xl mx-auto">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 type="text"
                 placeholder="Buscar por nombre o apellido..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-full"
+                className="pl-10 w-full h-12 text-base"
               />
             </div>
-
           </CardContent>
         </Card>
 
@@ -400,51 +400,55 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
           <Card className="shadow-sm">
             <CardContent className="p-0">
               <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3 h-auto p-1">
-                  <TabsTrigger
-                    value="basicos"
-                    className="text-base py-3 px-4 h-auto min-h-[44px] font-medium"
-                  >
-                    Criterios Básicos
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="especiales"
-                    className="text-base py-3 px-4 h-auto min-h-[44px] font-medium"
-                  >
-                    Criterios Especiales
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="visitas"
-                    className="text-base py-3 px-4 h-auto min-h-[44px] font-medium"
-                  >
-                    Visitas
-                  </TabsTrigger>
-                </TabsList>
+                 <div className="bg-gray-100 rounded-lg p-1 overflow-x-auto">
+                   <TabsList className="grid w-full min-w-max grid-cols-3 h-auto bg-transparent p-0 gap-1">
+                     <TabsTrigger
+                       value="basicos"
+                       className="text-xs sm:text-sm py-2.5 px-2 sm:px-3 h-auto min-h-[40px] sm:min-h-[44px] font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md whitespace-nowrap"
+                     >
+                       Básicos
+                     </TabsTrigger>
+                     <TabsTrigger
+                       value="especiales"
+                       className="text-xs sm:text-sm py-2.5 px-2 sm:px-3 h-auto min-h-[40px] sm:min-h-[44px] font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md whitespace-nowrap"
+                     >
+                       Especiales
+                     </TabsTrigger>
+                     <TabsTrigger
+                       value="visitas"
+                       className="text-xs sm:text-sm py-2.5 px-2 sm:px-3 h-auto min-h-[40px] sm:min-h-[44px] font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md whitespace-nowrap"
+                     >
+                       Visitas
+                     </TabsTrigger>
+                   </TabsList>
+                 </div>
 
                 {/* Criterios Básicos */}
                 <TabsContent value="basicos" className="mt-6">
                   <div className="sticky top-0 bg-background z-20 pb-4 border-b">
                     <Tabs value={subTab} onValueChange={setSubTab} className="w-full">
-                      <TabsList className="grid w-full grid-cols-3 h-auto p-1">
-                        <TabsTrigger
-                          value="puntualidad_asistencia"
-                          className="text-sm py-2 px-3 h-auto min-h-[40px] font-medium"
-                        >
-                          Puntualidad
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="actitud"
-                          className="text-sm py-2 px-3 h-auto min-h-[40px] font-medium"
-                        >
-                          Actitud
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="animo"
-                          className="text-sm py-2 px-3 h-auto min-h-[40px] font-medium"
-                        >
-                          Ánimo
-                        </TabsTrigger>
-                      </TabsList>
+                      <div className="bg-gray-100 rounded-lg p-1 overflow-x-auto">
+                        <TabsList className="grid w-full min-w-max grid-cols-3 h-auto bg-transparent p-0 gap-1">
+                          <TabsTrigger
+                            value="puntualidad_asistencia"
+                            className="text-xs py-2 px-2 h-auto min-h-[36px] font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md whitespace-nowrap"
+                          >
+                            Puntualidad
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="actitud"
+                            className="text-xs py-2 px-2 h-auto min-h-[36px] font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md whitespace-nowrap"
+                          >
+                            Actitud
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="animo"
+                            className="text-xs py-2 px-2 h-auto min-h-[36px] font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md whitespace-nowrap"
+                          >
+                            Ánimo
+                          </TabsTrigger>
+                        </TabsList>
+                      </div>
                     </Tabs>
                   </div>
 
@@ -491,26 +495,28 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
                 <TabsContent value="especiales" className="mt-6">
                   <div className="sticky top-0 bg-background z-20 pb-4 border-b">
                     <Tabs value={subTab} onValueChange={setSubTab} className="w-full">
-                      <TabsList className="grid w-full grid-cols-3 h-auto p-1">
-                        <TabsTrigger
-                          value="trabajo_manual"
-                          className="text-sm py-2 px-3 h-auto min-h-[40px] font-medium"
-                        >
-                          Trabajo Manual
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="verso_memoria"
-                          className="text-sm py-2 px-3 h-auto min-h-[40px] font-medium"
-                        >
-                          Verso Memoria
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="aprestamiento_biblico"
-                          className="text-sm py-2 px-3 h-auto min-h-[40px] font-medium"
-                        >
-                          Aprest. Bíblico
-                        </TabsTrigger>
-                      </TabsList>
+                      <div className="bg-gray-100 rounded-lg p-1 overflow-x-auto">
+                        <TabsList className="grid w-full min-w-max grid-cols-3 h-auto bg-transparent p-0 gap-1">
+                          <TabsTrigger
+                            value="trabajo_manual"
+                            className="text-xs py-2 px-2 h-auto min-h-[36px] font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md whitespace-nowrap"
+                          >
+                            Trabajo Manual
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="verso_memoria"
+                            className="text-xs py-2 px-2 h-auto min-h-[36px] font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md whitespace-nowrap"
+                          >
+                            Verso Memoria
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="aprestamiento_biblico"
+                            className="text-xs py-2 px-2 h-auto min-h-[36px] font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md whitespace-nowrap"
+                          >
+                            Aprest. Bíblico
+                          </TabsTrigger>
+                        </TabsList>
+                      </div>
                     </Tabs>
                   </div>
 
@@ -667,12 +673,12 @@ function BatchCriterionTab({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="sticky top-0 bg-background z-10 pb-4 border-b">
-        <h3 className="text-xl font-bold">{title}</h3>
+    <div className="space-y-3 sm:space-y-4">
+      <div className="sticky top-0 bg-background z-10 pb-3 sm:pb-4 border-b">
+        <h3 className="text-lg sm:text-xl font-bold">{title}</h3>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-3 px-1">
         {alumnos.map((alumno) => {
           const evaluation = evaluations[alumno.id]
           const currentValue = evaluation?.[field]
@@ -681,34 +687,39 @@ function BatchCriterionTab({
           const invitadosActuales = invitadosCount[alumno.id] || 0
 
           return (
-            <div
-              key={alumno.id}
-              className={`p-4 bg-white border-2 rounded-lg transition-all duration-200 ${isRecentlySaved
-                ? 'border-green-300 bg-green-50'
-                : 'border-gray-200 hover:border-gray-300'
-                }`}
-            >
-              <div className="w-full">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2 flex-1">
-                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <User className="w-4 h-4 text-gray-600" />
-                    </div>
-                    <span className="font-semibold text-base truncate">
-                      {alumno.nombre} {alumno.apellidos}
-                    </span>
-                  </div>
+             <div
+               key={alumno.id}
+               className={`p-3 sm:p-4 bg-white border-2 rounded-lg transition-all duration-200 ${isRecentlySaved
+                 ? 'border-green-300 bg-green-50'
+                 : 'border-gray-200 hover:border-gray-300'
+                 }`}
+             >
+               <div className="w-full">
+                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3">
+                   <div className="flex items-center gap-2 flex-1 min-w-0">
+                     <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                       <User className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" />
+                     </div>
+                     <span className="font-semibold text-sm sm:text-base truncate">
+                       {alumno.nombre} {alumno.apellidos}
+                     </span>
+                   </div>
 
-                  {!isVisitas && (
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      {estadoIconos}
-                    </div>
-                  )}
+                   <div className="flex items-center justify-between sm:justify-end gap-2">
+                     {!isVisitas && (
+                       <div className="flex items-center gap-1 flex-shrink-0">
+                         {estadoIconos}
+                       </div>
+                     )}
 
-                  {isRecentlySaved && (
-                    <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 ml-2" />
-                  )}
-                </div>
+                   {isRecentlySaved && (
+                     <div className="flex items-center gap-1 bg-green-100 text-green-700 px-2 py-1 rounded-md text-xs font-medium animate-pulse">
+                       <CheckCircle className="w-3 h-3" />
+                       <span className="hidden sm:inline">Guardado</span>
+                     </div>
+                   )}
+                   </div>
+                 </div>
 
                 {isVisitas ? (
                   <div className="flex items-center gap-2">
@@ -742,32 +753,35 @@ function BatchCriterionTab({
                       <Plus className="w-4 h-4" />
                     </button>
 
-                    {isRecentlySaved && (
-                      <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 ml-2" />
-                    )}
+                     {isRecentlySaved && (
+                       <div className="flex items-center gap-1 bg-green-100 text-green-700 px-2 py-1 rounded-md text-xs font-medium animate-pulse ml-2">
+                         <CheckCircle className="w-3 h-3" />
+                         <span className="hidden sm:inline">Guardado</span>
+                       </div>
+                     )}
                   </div>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {options.map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => onRadioChange(alumno.id, field, option.value)}
-                        className={`px-3 py-2 rounded border font-medium transition-all duration-200 min-w-[70px] ${currentValue === option.value
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                          } ${option.color}`}
-                        title={`${option.label} (${option.value} puntos)`}
-                      >
-                        <div className="text-xs font-medium leading-tight">
-                          {option.label}
-                        </div>
-                        <div className="text-sm font-bold">
-                          ({option.value})
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                 ) : (
+                   <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
+                     {options.map((option) => (
+                       <button
+                         key={option.value}
+                         onClick={() => onRadioChange(alumno.id, field, option.value)}
+                         className={`px-2 py-2 sm:px-3 sm:py-2 rounded border font-medium transition-all duration-200 min-w-[60px] sm:min-w-[70px] ${currentValue === option.value
+                           ? 'border-blue-500 bg-blue-50 text-blue-700'
+                           : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                           } ${option.color}`}
+                         title={`${option.label} (${option.value} puntos)`}
+                       >
+                         <div className="text-xs font-medium leading-tight">
+                           {option.label}
+                         </div>
+                         <div className="text-xs sm:text-sm font-bold">
+                           ({option.value})
+                         </div>
+                       </button>
+                     ))}
+                   </div>
+                 )}
               </div>
             </div>
           )

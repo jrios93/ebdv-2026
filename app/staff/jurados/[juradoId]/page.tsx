@@ -40,7 +40,7 @@ export default function JuradoPortalPage({ params }: { params: Promise<{ juradoI
       setError("");
       
       // Obtener salones con estado desde Supabase
-      const salonesData = await obtenerSalonesConEstado(resolvedParams.juradoId);
+      const salonesData = await obtenerSalonesConEstado();
       setSalones(salonesData);
     } catch (error) {
       console.error('Error al cargar datos:', error);
