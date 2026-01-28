@@ -14,6 +14,7 @@ import { useRealtimeInscripciones } from "@/hooks/useRealtimeInscripciones"
 import { getAllClassrooms } from "@/lib/supabaseQueries"
 import { supabase } from "@/lib/supabase"
 import { getClassroomInfo } from "@/lib/classroom"
+import { getFechaHoyPeru } from "@/lib/date/config"
 
 // Mapa de IDs a nombres de salones (extraído de los archivos existentes)
 const CLASSROOM_IDS: Record<string, string> = {
@@ -57,7 +58,7 @@ export default function ReportesPage() {
     // Cargar evaluaciones del día para mostrar asistencia
     const cargarEvaluacionesHoy = async () => {
       try {
-        const today = new Date().toISOString().split('T')[0]
+        const today = getFechaHoyPeru()
         const response = await fetch(`/api/evaluaciones-hoy?fecha=${today}`)
         if (response.ok) {
           const data = await response.json()
@@ -110,8 +111,8 @@ export default function ReportesPage() {
     }
 
     // Si es hoy y no ha sido evaluado, mostrar pendiente
-    const today = new Date().toISOString().split('T')[0]
-    const inscripcionDate = new Date(alumno.fecha_inscripcion).toISOString().split('T')[0]
+    const today = getFechaHoyPeru()
+    const inscripcionDate = new Date(alumno.fecha_inscripcion).toLocaleDateString('en-CA', { timeZone: 'America/Lima' })
 
     if (inscripcionDate === today) {
       return { status: 'reciente', label: 'Inscrito hoy', color: 'text-blue-600', icon: Clock }

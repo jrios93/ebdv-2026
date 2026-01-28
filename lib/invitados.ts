@@ -97,17 +97,24 @@ export async function getRankingInvitados(
       }
     })
     
-    // Convertir a array y ordenar por total de invitados
+    // Convertir a array y ordenar por total de invitados (primero por total, luego por nombre para desempates)
     const ranking = Array.from(mapaInvitados.values())
-      .sort((a, b) => b.totalInvitados - a.totalInvitados)
+      .sort((a, b) => {
+        // Primario: más invitados totales
+        if (b.totalInvitados !== a.totalInvitados) {
+          return b.totalInvitados - a.totalInvitados
+        }
+        // Secundario: nombre alfabético (para consistencia en empates)
+        return a.alumno.nombre.localeCompare(b.alumno.nombre)
+      })
       .map((item, index) => ({
         ...item,
         posicion: index + 1
       }))
     
-    console.log(`🏆 Ranking final: ${ranking.length} alumnos`)
+    console.log(`🏆 Ranking final (ordenado por total descendente, luego nombre): ${ranking.length} alumnos`)
     ranking.forEach((item, index) => {
-      console.log(`${index + 1}. ${item.alumno.nombre}: ${item.totalInvitados} invitados totales`)
+      console.log(`${index + 1}. ${item.alumno.nombre} ${item.alumno.apellidos}: ${item.totalInvitados} invitados (Salón: ${item.alumno.classrooms?.nombre || 'N/A'})`)
     })
     
     return ranking
