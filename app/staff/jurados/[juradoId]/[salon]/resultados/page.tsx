@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeftIcon, DownloadIcon, CheckCircleIcon } from "lucide-react";
+import { ArrowLeftIcon, DownloadIcon, CheckCircleIcon, RefreshCwIcon, CalendarIcon, HistoryIcon } from "lucide-react";
 import { obtenerEvaluacionesPorSalon, getClassroomIdByName, getClassroomIdByNameOrThrow } from "@/lib/juradoService";
 
 export default function ResultadosSalonPage({ params }: { params: Promise<{ juradoId: string; salon: string }> }) {
@@ -14,7 +14,22 @@ export default function ResultadosSalonPage({ params }: { params: Promise<{ jura
   const [evaluaciones, setEvaluaciones] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [modoVista, setModoVista] = useState<'hoy' | 'historial'>('hoy');
   const router = useRouter();
+
+  // Obtener fecha actual en formato YYYY-MM-DD (Perú)
+  const getFechaHoy = () => {
+    return new Date().toLocaleDateString('en-CA', { 
+      timeZone: 'America/Lima',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  };
+
+  useEffect(() => {
+    cargarResultados();
+  }, [resolvedParams.juradoId, resolvedParams.salon, modoVista]);
 
   const cargarResultados = async () => {
     try {
@@ -29,8 +44,10 @@ export default function ResultadosSalonPage({ params }: { params: Promise<{ jura
         return;
       }
       
-        const evaluacionesData = await obtenerEvaluacionesPorSalon(salonId);
-      setEvaluaciones(evaluacionesData);
+        // Filtrar por fecha según el modo de vista
+        const fechaFiltro = modoVista === 'hoy' ? getFechaHoy() : undefined;
+        const evaluacionesData = await obtenerEvaluacionesPorSalon(salonId, fechaFiltro);
+        setEvaluaciones(evaluacionesData);
     } catch (error) {
       console.error('Error al cargar resultados:', error);
       setError("No se pudieron cargar los resultados");
@@ -136,16 +153,57 @@ export default function ResultadosSalonPage({ params }: { params: Promise<{ jura
               </Button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Resultados de {salonNombre}</h1>
-                <p className="text-gray-600">{new Date().toLocaleDateString()}</p>
+                <div className="flex items-center space-x-4 mt-2">
+                  <p className="text-gray-600">
+                    {modoVista === 'hoy' 
+                      ? `Hoy (${getFechaHoy()})` 
+                      : 'Historial completo'}
+                  </p>
+                  {/* Toggle de Vista */}
+                  <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
+                    <button
+                      onClick={() => setModoVista('hoy')}
+                      className={`flex items-center space-x-1 px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                        modoVista === 'hoy'
+                          ? 'bg-white text-blue-600 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      <CalendarIcon className="w-4 h-4" />
+                      <span>Hoy</span>
+                    </button>
+                    <button
+                      onClick={() => setModoVista('historial')}
+                      className={`flex items-center space-x-1 px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                        modoVista === 'historial'
+                          ? 'bg-white text-blue-600 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      <HistoryIcon className="w-4 h-4" />
+                      <span>Historial</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-            <Button
-              onClick={descargarReporte}
-              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700"
-            >
-              <DownloadIcon className="w-4 h-4" />
-              <span>Descargar Reporte</span>
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Button
+                onClick={cargarResultados}
+                variant="outline"
+                className="flex items-center space-x-2"
+              >
+                <RefreshCwIcon className="w-4 h-4" />
+                <span>Actualizar</span>
+              </Button>
+              <Button
+                onClick={descargarReporte}
+                className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700"
+              >
+                <DownloadIcon className="w-4 h-4" />
+                <span>Descargar Reporte</span>
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -158,7 +216,8 @@ export default function ResultadosSalonPage({ params }: { params: Promise<{ jura
             <CardHeader>
               <CardTitle>Resumen de Evaluaciones</CardTitle>
               <CardDescription>
-                {evaluaciones.length} jurado{evaluaciones.length !== 1 ? 's' : ''} han evaluado este salón
+                {evaluaciones.length} jurado{evaluaciones.length !== 1 ? 's' : ''} han evaluado este salón 
+                {modoVista === 'hoy' ? ' hoy' : ' en el historial'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -196,14 +255,31 @@ export default function ResultadosSalonPage({ params }: { params: Promise<{ jura
           </Card>
         )}
 
+        {/* Indicador de fecha */}
+        {evaluaciones.length > 0 && (
+          <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-center space-x-2 text-blue-700">
+              <CalendarIcon className="w-4 h-4" />
+              <span className="text-sm font-medium">
+                Mostrando evaluaciones: {modoVista === 'hoy' ? getFechaHoy() : 'Todas las fechas'}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Lista de evaluaciones */}
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">Evaluaciones por Jurado</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            Evaluaciones por Jurado
+            {modoVista === 'hoy' && <span className="text-blue-600 ml-2">(Hoy)</span>}
+          </h2>
           
           {evaluaciones.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
-                <p className="text-gray-500">No hay evaluaciones registradas para este salón</p>
+                <p className="text-gray-500">
+                  No hay evaluaciones registradas para este salón{modoVista === 'hoy' ? ' hoy' : ''}
+                </p>
               </CardContent>
             </Card>
           ) : (

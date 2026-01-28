@@ -98,17 +98,48 @@ export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoI
         return;
       }
       
-      const today = new Date().toISOString().split('T')[0]
+      // Obtener fecha actual en formato Perú YYYY-MM-DD
+      const getFechaPeru = () => {
+        const ahora = new Date();
+        // Obtener componentes por separado para evitar problemas
+        const year = ahora.toLocaleDateString('en-CA', { 
+          timeZone: 'America/Lima',
+          year: 'numeric'
+        });
+        const month = ahora.toLocaleDateString('en-CA', { 
+          timeZone: 'America/Lima',
+          month: '2-digit'
+        });
+        const day = ahora.toLocaleDateString('en-CA', { 
+          timeZone: 'America/Lima',
+          day: '2-digit'
+        });
+        
+        return `${year}-${month}-${day}`;
+      };
+      
+      const today = getFechaPeru();
+      console.log('📅 Fecha actual (Perú):', { 
+        fecha: today,
+        tipo: typeof today,
+        hora: new Date().toLocaleString('es-PE', { timeZone: 'America/Lima' })
+      });
+      
       const evaluacionData = await obtenerEvaluacionDelDia(salonId, today, resolvedParams.juradoId);
       
       if (evaluacionData) {
-        setEvaluacion(evaluacionData);
+        console.log('✅ Evaluación existente encontrada, cargando...', evaluacionData);
+        // Eliminar el campo 'preguntas' ya que es generado por la BD
+        const { preguntas, ...evaluacionSinPreguntas } = evaluacionData;
+        console.log('📝 Evaluación sin campo generado:', evaluacionSinPreguntas);
+        setEvaluacion(evaluacionSinPreguntas);
       } else {
-        // Crear evaluación vacía (normal para primera vez)
+        // Crear evaluación vacía (normal para primera vez del día)
+        console.log('🆕 Creando nueva evaluación para el día:', today);
         setEvaluacion({
           jurado_id: resolvedParams.juradoId,
           classroom_id: salonId,
-          fecha: new Date().toISOString().split('T')[0],
+          fecha: today,
           puntualidad: 0,
           animo_y_barras: 0,
           orden: 0,
@@ -125,10 +156,13 @@ export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoI
   };
 
   const actualizarCampo = (campo: string, valor: number) => {
-    setEvaluacion((prev: any) => ({
-      ...prev,
-      [campo]: valor
-    }));
+    setEvaluacion((prev: any) => {
+      const { preguntas, ...sinPreguntas } = prev;
+      return {
+        ...sinPreguntas,
+        [campo]: valor
+      };
+    });
   };
 
    const guardarProgreso = async () => {
@@ -184,18 +218,32 @@ export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoI
         return;
       }
       
-      const exito = await guardarEvaluacion(finalSalonId, evaluacion);
-      if (exito) {
-        setSuccess("Evaluación completada correctamente");
-        setTimeout(() => {
-          router.push(`/staff/jurados/${resolvedParams.juradoId}/${resolvedParams.salon}/resultados`);
-        }, 2000);
-      } else {
-        setError("Error al guardar la evaluación");
-      }
+      console.log('💾 Guardando evaluación:', { 
+        salonId: finalSalonId,
+        evaluacion,
+        evaluacionKeys: Object.keys(evaluacion),
+        tienePreguntas: 'preguntas' in evaluacion
+      });
+      
+        const exito = await guardarEvaluacion(finalSalonId, evaluacion);
+        if (exito) {
+          console.log('🎉 Evaluación guardada, redirigiendo...');
+          setSuccess("✅ Evaluación completada");
+          
+          // Redirección más rápida ya que todo funcionó bien
+          setTimeout(() => {
+            console.log('🚀 Redirigiendo a resultados...');
+            router.push(`/staff/jurados/${resolvedParams.juradoId}/${resolvedParams.salon}/resultados`);
+          }, 800);
+        } else {
+          console.error('❌ guardarEvaluación falló');
+          setError("Error al guardar la evaluación");
+        }
     } catch (error) {
+      console.error('❌ Error en finalizarEvaluacion:', error);
       setError("Ocurrió un error al guardar");
     } finally {
+      console.log('🏁 Finalizando - Resetando saving a false');
       setSaving(false);
     }
   };

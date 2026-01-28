@@ -30,54 +30,43 @@ export interface PuntuacionGrupal {
   orden: number;
   verso_memoria: number;
   preguntas_correctas: number;
-  preguntas: number;
-  jurado_registro_id?: string;
+  preguntas: number; // Campo generado por la BD
+  jurado_id?: string;
   creado_en: string;
   actualizado_en: string;
 }
 
 // ====== AUTENTICACIÓN JURADO ======
 
-export async function autenticarJurado(codigo: string, password: string): Promise<Jurado | null> {
+export async function autenticarJurado(dni: string, password: string): Promise<Jurado | null> {
   try {
     // Validar contraseñas directamente sin buscar en DB (modo frontend-only)
     const contraseñasValidas = {
-      '19837455': { 
-        password: 'emilio123', 
-        nombre: 'Emilio Catay',
-        dni: '19837455',
-        rol: 'jurado' as const,
-        activo: true,
-        id: 'temp-id-1',
-        creado_en: new Date().toISOString()
-      },
-      '43160277': { 
-        password: 'eliseo123', 
-        nombre: 'Eliseo Maldonado',
-        dni: '43160277', 
-        rol: 'jurado' as const,
-        activo: true,
-        id: 'temp-id-2',
-        creado_en: new Date().toISOString()
-      },
-      '45476174': { 
-        password: 'pierre123', 
-        nombre: 'Pierre Vivanco',
-        dni: '45476174',
-        rol: 'jurado' as const,
-        activo: true, 
-        id: 'temp-id-3',
-        creado_en: new Date().toISOString()
-      }
+      '12345678': 'emilio123',
+      '87654321': 'eliseo123', 
+      '11223344': 'pierre123'
     };
 
-    const juradoData = contraseñasValidas[codigo as keyof typeof contraseñasValidas];
-    
-    if (juradoData && juradoData.password === password) {
-      return juradoData as Jurado;
+    // Primero validar contraseña
+    if (contraseñasValidas[dni as keyof typeof contraseñasValidas] !== password) {
+      return null;
     }
 
-    return null;
+    // Buscar el jurado en la base de datos para obtener su ID real
+    const { data, error } = await supabase
+      .from('maestros')
+      .select('id, dni, nombre, email, rol, activo, creado_en')
+      .eq('dni', dni)
+      .eq('rol', 'jurado')
+      .eq('activo', true)
+      .single();
+
+    if (error || !data) {
+      console.error('Jurado no encontrado en DB:', error);
+      return null;
+    }
+
+    return data as Jurado;
   } catch (error) {
     console.error('Error en autenticación:', error);
     return null;
@@ -90,13 +79,57 @@ export async function obtenerSalonesConEstado(fecha?: string): Promise<Array<Sal
   try {
     // Primero obtener todos los salones base
     const salones = await obtenerSalones();
-    const today = fecha || new Date().toISOString().split('T')[0];
+    
+    // Obtener fecha actual de Perú o usar la proporcionada
+      const today = fecha || (() => {
+        const ahoraPeru = new Date();
+        // Obtener componentes por separado y limpiarlos
+        const year = ahoraPeru.toLocaleDateString('en-CA', { 
+          timeZone: 'America/Lima',
+          year: 'numeric'
+        }).trim();
+        const month = ahoraPeru.toLocaleDateString('en-CA', { 
+          timeZone: 'America/Lima',
+          month: '2-digit'
+        }).trim();
+        const day = ahoraPeru.toLocaleDateString('en-CA', { 
+          timeZone: 'America/Lima',
+          day: '2-digit'
+        }).trim();
+        
+        const fechaFormateada = `${year}-${month}-${day}`;
+        console.log('🔧 Componentes de fecha:', { year, month, day, resultado: fechaFormateada });
+        
+        return fechaFormateada;
+      })();
+    
+    console.log('📅 Fecha para consulta de salones:', { 
+      today,
+      tipo: typeof today,
+      longitud: today?.length,
+      horaPeru: new Date().toLocaleString('es-PE', { timeZone: 'America/Lima' })
+    });
+    
+    // Validar que la fecha no tenga espacios
+    if (typeof today === 'string' && today.includes(' ')) {
+      console.error('❌ ERROR: La fecha contiene espacios:', JSON.stringify(today));
+      throw new Error('La fecha contiene caracteres inválidos');
+    }
+    
+    console.log('🌐 Consultando con fecha:', today);
     
     // Obtener evaluaciones del día para cada salón
-    const { data: evaluaciones } = await supabase
+    const { data: evaluaciones, error } = await supabase
       .from('puntuacion_grupal_diaria')
-      .select('classroom_id, created_at')
+      .select('classroom_id, creado_en')  // Corregido: usar el nombre real de la columna
       .eq('fecha', today);
+    
+    if (error) {
+      console.error('❌ Error en consulta de evaluaciones:', error);
+      throw error;
+    }
+    
+    console.log('✅ Evaluaciones cargadas:', evaluaciones?.length || 0, 'registros');
     
     return salones.map(salon => {
       const evaluacionHoy = evaluaciones?.find(e => e.classroom_id === salon.id);
@@ -172,20 +205,40 @@ export async function obtenerEvaluacionDelDia(
   juradoId: string
 ): Promise<PuntuacionGrupal | null> {
   try {
+    // Validar que el juradoId no sea un ID temporal
+    if (juradoId.startsWith('temp-')) {
+      console.error('❌ ID temporal detectado, esto no debería pasar:', juradoId);
+      throw new Error(`ID temporal no válido: ${juradoId}. Por favor, inicia sesión nuevamente.`);
+    }
+
+    // Importante: Usar la fecha local (Perú) directamente para la consulta
+    // La BD debe almacenar la fecha según el timezone local
+    console.log('🔍 Buscando evaluación:', { 
+      salonId, 
+      fecha, // Fecha local YYYY-MM-DD
+      juradoId,
+      horaPeru: new Date().toLocaleString('es-PE', { timeZone: 'America/Lima' })
+    });
+
     const { data, error } = await supabase
       .from('puntuacion_grupal_diaria')
       .select('*')
       .eq('classroom_id', salonId)
-      .eq('fecha', fecha)
-      .eq('jurado_registro_id', juradoId)
+      .eq('fecha', fecha) // Usar fecha local directamente
+      .eq('jurado_id', juradoId)
       .single();
 
-    if (error) {
-      console.error('Error al obtener evaluación del día:', error);
-      return null;
+    if (error && error.code !== 'PGRST116') {
+      console.log('⚠️ Error en consulta pero esperado si no existe evaluación:', error.message);
+      // No lanzar error si es solo que no existe la evaluación
+      if (error.code === 'PGRST116') {
+        return null;
+      }
+      throw error;
     }
 
-    return data;
+    console.log('✅ Evaluación encontrada:', data);
+    return data as PuntuacionGrupal;
   } catch (error) {
     console.error('Error al obtener evaluación del día:', error);
     return null;
@@ -194,17 +247,27 @@ export async function obtenerEvaluacionDelDia(
 
 export async function guardarEvaluacion(
   salonId: string,
-  evaluacion: Omit<PuntuacionGrupal, 'id' | 'creado_en' | 'actualizado_en' | 'classroom_id'> & { jurado_registro_id: string }
+  evaluacion: Omit<PuntuacionGrupal, 'id' | 'creado_en' | 'actualizado_en' | 'classroom_id' | 'preguntas'> & { jurado_id: string }
 ): Promise<boolean> {
   try {
+    // Eliminar explícitamente el campo 'preguntas' si existe
+    const { preguntas, ...evaluacionLimpia } = evaluacion as any;
+    
+    console.log('💾 Guardando evaluación:', { 
+      salonId, 
+      evaluacionLimpia,
+      campos: Object.keys(evaluacionLimpia),
+      seEliminoPreguntas: !!preguntas
+    });
+    
     const { error } = await supabase
       .from('puntuacion_grupal_diaria')
       .upsert({
-        ...evaluacion,
+        ...evaluacionLimpia,
         classroom_id: salonId,
         actualizado_en: new Date().toISOString()
       }, {
-        onConflict: 'classroom_id,fecha,jurado_registro_id'
+        onConflict: 'classroom_id,fecha,jurado_id'
       });
 
     if (error) {
@@ -212,6 +275,7 @@ export async function guardarEvaluacion(
       return false;
     }
 
+    console.log('✅ Evaluación guardada exitosamente en la BD');
     return true;
   } catch (error) {
     console.error('Error al guardar evaluación:', error);
@@ -226,10 +290,7 @@ export async function obtenerEvaluacionesPorSalon(
   try {
     let query = supabase
       .from('puntuacion_grupal_diaria')
-      .select(`
-        *,
-        maestros!jurado_registro_id(nombre)
-      `)
+      .select('*')
       .eq('classroom_id', salonId)
       .order('fecha', { ascending: false });
 
@@ -243,6 +304,8 @@ export async function obtenerEvaluacionesPorSalon(
       console.error('Error al obtener evaluaciones por salón:', error);
       return [];
     }
+
+    console.log('📊 Evaluaciones encontradas para salón:', { salonId, cantidad: data?.length || 0, data });
 
     return data || [];
   } catch (error) {
