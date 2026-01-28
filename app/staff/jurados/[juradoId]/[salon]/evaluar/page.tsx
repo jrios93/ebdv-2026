@@ -20,9 +20,9 @@ export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoI
 
   // Criterios de evaluación con las opciones correctas
   const criterios = [
-    { 
-      id: 'puntualidad', 
-      nombre: 'Puntualidad', 
+    {
+      id: 'puntualidad',
+      nombre: 'Puntualidad',
       maximo: 10,
       opciones: [
         { label: 'Malo (0%)', valor: 0 },
@@ -32,9 +32,9 @@ export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoI
         { label: 'Excelente (100%)', valor: 10 }
       ]
     },
-    { 
-      id: 'animo_y_barras', 
-      nombre: 'Ánimo y Barras', 
+    {
+      id: 'animo_y_barras',
+      nombre: 'Ánimo y Barras',
       maximo: 20,
       opciones: [
         { label: 'Malo', valor: 5 },
@@ -43,9 +43,9 @@ export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoI
         { label: 'Excelente', valor: 20 }
       ]
     },
-    { 
-      id: 'orden', 
-      nombre: 'Orden', 
+    {
+      id: 'orden',
+      nombre: 'Orden',
       maximo: 20,
       opciones: [
         { label: 'Malo', valor: 5 },
@@ -54,9 +54,9 @@ export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoI
         { label: 'Excelente', valor: 20 }
       ]
     },
-    { 
-      id: 'verso_memoria', 
-      nombre: 'Verso de Memoria', 
+    {
+      id: 'verso_memoria',
+      nombre: 'Verso de Memoria',
       maximo: 20,
       opciones: [
         { label: 'Malo', valor: 5 },
@@ -65,9 +65,9 @@ export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoI
         { label: 'Excelente', valor: 20 }
       ]
     },
-    { 
-      id: 'preguntas_correctas', 
-      nombre: 'Niños con Respuesta Correcta', 
+    {
+      id: 'preguntas_correctas',
+      nombre: 'Niños con Respuesta Correcta',
       maximo: 30,
       opciones: [
         { label: 'Ninguno', valor: 0 },
@@ -89,7 +89,7 @@ export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoI
     try {
       setLoading(true);
       setError("");
-      
+
       let salonId: string;
       try {
         salonId = await getClassroomIdByNameOrThrow(resolvedParams.salon);
@@ -97,36 +97,35 @@ export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoI
         setError("Salón no encontrado");
         return;
       }
-      
+
       // Obtener fecha actual en formato Perú YYYY-MM-DD
       const getFechaPeru = () => {
         const ahora = new Date();
-        // Obtener componentes por separado para evitar problemas
-        const year = ahora.toLocaleDateString('en-CA', { 
+        const year = ahora.toLocaleDateString('en-CA', {
           timeZone: 'America/Lima',
           year: 'numeric'
         });
-        const month = ahora.toLocaleDateString('en-CA', { 
+        const month = ahora.toLocaleDateString('en-CA', {
           timeZone: 'America/Lima',
           month: '2-digit'
         });
-        const day = ahora.toLocaleDateString('en-CA', { 
+        const day = ahora.toLocaleDateString('en-CA', {
           timeZone: 'America/Lima',
           day: '2-digit'
         });
-        
+
         return `${year}-${month}-${day}`;
       };
-      
+
       const today = getFechaPeru();
-      console.log('📅 Fecha actual (Perú):', { 
+      console.log('📅 Fecha actual (Perú):', {
         fecha: today,
         tipo: typeof today,
         hora: new Date().toLocaleString('es-PE', { timeZone: 'America/Lima' })
       });
-      
+
       const evaluacionData = await obtenerEvaluacionDelDia(salonId, today, resolvedParams.juradoId);
-      
+
       if (evaluacionData) {
         console.log('✅ Evaluación existente encontrada, cargando...', evaluacionData);
         // Eliminar el campo 'preguntas' ya que es generado por la BD
@@ -165,23 +164,26 @@ export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoI
     });
   };
 
-   const guardarProgreso = async () => {
+  const guardarProgreso = async () => {
     if (!evaluacion) return;
-    
+
     setSaving(true);
     setError("");
-    
-    // Obtener salonId de nuevo para asegurar que sea válido
+
     let currentSalonId: string;
     try {
       currentSalonId = await getClassroomIdByNameOrThrow(resolvedParams.salon);
     } catch (error) {
       setError("Salón no encontrado");
+      setSaving(false);
       return;
     }
-    
-     try {
-      const exito = await guardarEvaluacion(currentSalonId, evaluacion);
+
+    try {
+      // Limpiar campo 'preguntas' antes de guardar
+      const { preguntas, ...evaluacionLimpia } = evaluacion;
+      const exito = await guardarEvaluacion(currentSalonId, evaluacionLimpia);
+
       if (exito) {
         setSuccess("Progreso guardado correctamente");
         setTimeout(() => setSuccess(""), 3000);
@@ -189,6 +191,7 @@ export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoI
         setError("Error al guardar el progreso");
       }
     } catch (error) {
+      console.error("Error en guardarProgreso:", error);
       setError("Ocurrió un error al guardar");
     } finally {
       setSaving(false);
@@ -198,8 +201,8 @@ export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoI
   const finalizarEvaluacion = async () => {
     if (!evaluacion) return;
 
-    const total = evaluacion.puntualidad + evaluacion.animo_y_barras + 
-                evaluacion.orden + evaluacion.verso_memoria + evaluacion.preguntas_correctas;
+    const total = evaluacion.puntualidad + evaluacion.animo_y_barras +
+      evaluacion.orden + evaluacion.verso_memoria + evaluacion.preguntas_correctas;
 
     if (total === 0) {
       setError("Por favor, ingrese al menos un puntaje");
@@ -207,61 +210,54 @@ export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoI
     }
 
     setSaving(true);
-    
-     try {
-      // Obtener salonId de nuevo para asegurar que sea válido
+    setError("");
+
+    try {
       let finalSalonId: string;
       try {
         finalSalonId = await getClassroomIdByNameOrThrow(resolvedParams.salon);
       } catch (error) {
         setError("Salón no encontrado");
+        setSaving(false);
         return;
       }
-      
-      console.log('💾 Guardando evaluación:', { 
+
+      // Limpiar campo 'preguntas' antes de guardar
+      const { preguntas, ...evaluacionLimpia } = evaluacion;
+
+      console.log('💾 Guardando evaluación:', {
         salonId: finalSalonId,
-        evaluacion,
-        evaluacionKeys: Object.keys(evaluacion),
-        tienePreguntas: 'preguntas' in evaluacion
+        evaluacion: evaluacionLimpia,
+        evaluacionKeys: Object.keys(evaluacionLimpia)
       });
-      
-        const exito = await guardarEvaluacion(finalSalonId, evaluacion);
-        if (exito) {
-          console.log('🎉 Evaluación guardada, redirigiendo...');
-          setSuccess("✅ Evaluación completada");
-          
-          // Redirección más rápida ya que todo funcionó bien
-          setTimeout(() => {
-            console.log('🚀 Redirigiendo a resultados...');
-            router.push(`/staff/jurados/${resolvedParams.juradoId}/${resolvedParams.salon}/resultados`);
-          }, 800);
-        } else {
-          console.error('❌ guardarEvaluación falló');
-          setError("Error al guardar la evaluación");
-        }
+
+      const exito = await guardarEvaluacion(finalSalonId, evaluacionLimpia);
+
+      if (exito) {
+        console.log('🎉 Evaluación guardada, redirigiendo...');
+        setSuccess("✅ Evaluación completada");
+
+        setTimeout(() => {
+          console.log('🚀 Redirigiendo a resultados...');
+          router.push(`/staff/jurados/${resolvedParams.juradoId}/${resolvedParams.salon}/resultados`);
+        }, 800);
+      } else {
+        console.error('❌ guardarEvaluación falló');
+        setError("Error al guardar la evaluación");
+      }
     } catch (error) {
       console.error('❌ Error en finalizarEvaluacion:', error);
       setError("Ocurrió un error al guardar");
     } finally {
-      console.log('🏁 Finalizando - Resetando saving a false');
+      console.log('🏁 Liberando botón');
       setSaving(false);
     }
   };
 
-  const obtenerSalonIdPorNombre = (nombre: string): string | null => {
-    const nombreToId = {
-      'verdad': '5272477b-26a4-4179-a276-1c4730238974',
-      'gracia': '9b8a58b3-6356-4b75-b28b-d5f5d8e596fd', 
-      'luz': 'd863c43d-9b83-494a-a88b-c3973a31bfd7',
-      'vida': 'eda65bd9-dadd-4f74-954e-b952a91845a3'
-    };
-    return nombreToId[nombre.toLowerCase() as keyof typeof nombreToId] || null;
-  };
-
   const getTotalPuntaje = () => {
     if (!evaluacion) return 0;
-    return evaluacion.puntualidad + evaluacion.animo_y_barras + 
-           evaluacion.orden + evaluacion.verso_memoria + evaluacion.preguntas_correctas;
+    return evaluacion.puntualidad + evaluacion.animo_y_barras +
+      evaluacion.orden + evaluacion.verso_memoria + evaluacion.preguntas_correctas;
   };
 
   if (loading) {
@@ -361,10 +357,10 @@ export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoI
                   {/* Barra de progreso visual */}
                   <div className="relative">
                     <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
-                      <div 
+                      <div
                         className="h-full bg-blue-600 transition-all duration-300"
-                        style={{ 
-                          width: `${((evaluacion[criterio.id as keyof typeof evaluacion] || 0) / criterio.maximo) * 100}%` 
+                        style={{
+                          width: `${((evaluacion[criterio.id as keyof typeof evaluacion] || 0) / criterio.maximo) * 100}%`
                         }}
                       ></div>
                     </div>
@@ -376,11 +372,10 @@ export default function EvaluarSalonPage({ params }: { params: Promise<{ juradoI
                       <button
                         key={index}
                         onClick={() => actualizarCampo(criterio.id, opcion.valor)}
-                        className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${
-                          evaluacion[criterio.id as keyof typeof evaluacion] === opcion.valor
+                        className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${evaluacion[criterio.id as keyof typeof evaluacion] === opcion.valor
                             ? 'border-blue-500 bg-blue-50 shadow-md'
                             : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-semibold text-gray-800 text-sm">

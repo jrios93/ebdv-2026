@@ -51,6 +51,14 @@ export interface PuntuacionGrupalDiaria {
   created_at: string
 }
 
+export interface PuntajePorDiaYSalon {
+  fecha: string
+  salon: string
+  color: string
+  jurados_evaluaron: number
+  puntaje_promedio: number
+}
+
 export interface Maestro {
   id: string
   nombre: string
@@ -874,6 +882,87 @@ export async function getAlumnosPorSalon(): Promise<Array<{
   }
 }
 
+export async function getPuntajesPorDiaYSalon(): Promise<Array<PuntajePorDiaYSalon> | null> {
+  try {
+    console.log('🔍 Buscando puntajes por día y salón...')
+    
+    // Consulta directa usando el campo 'preguntas' como en tu SQL
+    const { data, error } = await supabase
+      .from('puntuacion_grupal_diaria')
+      .select(`
+        fecha,
+        classrooms!inner(
+          nombre,
+          color
+        ),
+        preguntas
+      `)
+      .not('preguntas', 'is', null)
+      .gte('fecha', '2026-01-26') // Desde el lunes 26 (inicio del evento)
+      .order('fecha', { ascending: false })
+
+    if (error) {
+      console.error('❌ Error en consulta directa:', error)
+      throw error
+    }
+
+    console.log('📊 Datos crudos encontrados:', data?.length, 'registros')
+    console.log('🗓️ Fechas encontradas:', [...new Set(data?.map(d => d.fecha))].sort())
+    console.log('📍 Rango de datos: Desde 2026-01-26 (lunes) hacia adelante')
+
+    if (!data || data.length === 0) {
+      console.log('📭 No hay datos de puntajes')
+      return null
+    }
+
+    // Agrupar exactamente como en tu SQL: GROUP BY pgd.fecha, c.nombre, c.color
+    const agrupado = data.reduce((acc: Record<string, any>, item: any) => {
+      const key = `${item.fecha}-${item.classrooms.nombre}-${item.classrooms.color}`
+      
+      if (!acc[key]) {
+        acc[key] = {
+          fecha: item.fecha,
+          salon: item.classrooms.nombre,
+          color: item.classrooms.color || '#gray',
+          jurados_evaluaron: 0,
+          total_preguntas: 0
+        }
+      }
+      
+      acc[key].jurados_evaluaron += 1
+      acc[key].total_preguntas += item.preguntas || 0
+      
+      return acc
+    }, {})
+
+    console.log('📊 Agrupados por día y salón:', Object.keys(agrupado).length, 'grupos')
+
+    const resultado = Object.values(agrupado || {}).map((item: any) => {
+      const promedio = item.total_preguntas / item.jurados_evaluaron
+      return {
+        fecha: item.fecha,
+        salon: item.salon,
+        color: item.color,
+        jurados_evaluaron: item.jurados_evaluaron,
+        puntaje_promedio: parseFloat(Math.round(promedio * 100) / 100 + '') // ROUND(AVG(pgd.preguntas), 2)
+      }
+    })
+
+    console.log('✅ Resultado procesado:', resultado)
+
+    // Ordenar: ORDER BY pgd.fecha DESC, puntaje_promedio DESC
+    return resultado.sort((a: any, b: any) => {
+      if (a.fecha !== b.fecha) {
+        return b.fecha.localeCompare(a.fecha) // Fecha descendente
+      }
+      return b.puntaje_promedio - a.puntaje_promedio // Puntaje descendente
+    })
+  } catch (error) {
+    console.error('❌ Error getting puntajes por día y salón:', error)
+    return null
+  }
+}
+
 export async function getResumenSemanal(): Promise<{
   rankingAlumnos: Array<{
     alumno: Alumno
@@ -996,8 +1085,8 @@ export async function getResumenSemanal(): Promise<{
 
     console.log('📊 Datos grupales encontrados:', datosGrupales?.length)
 
-    // Para cada salón, guardamos suma y conteo para calcular promedio
-    const scoresSalones = datosGrupales?.reduce((acc: Record<string, { suma: number, conteo: number }>, item: any) => {
+    // Para cada salón, guardamos suma, conteo y fechas para calcular días reales
+    const scoresSalones = datosGrupales?.reduce((acc: Record<string, { suma: number, conteo: number, fechas: string[] }>, item: any) => {
       // Validar que exista el salón
       if (!item.classrooms || !item.classrooms.nombre) {
         console.warn('⚠️ Item sin datos de salón:', item)
@@ -1008,22 +1097,30 @@ export async function getResumenSemanal(): Promise<{
       const total = (item.puntualidad || 0) + (item.animo_y_barras || 0) + (item.orden || 0) + (item.verso_memoria || 0) + (item.preguntas_correctas || 0)
 
       if (!acc[salon]) {
-        acc[salon] = { suma: 0, conteo: 0 }
+        acc[salon] = { suma: 0, conteo: 0, fechas: [] }
       }
 
       acc[salon].suma += total
       acc[salon].conteo += 1
+      acc[salon].fechas.push(item.fecha)
 
       return acc
     }, {})
 
     const rankingSalones = Object.entries(scoresSalones || {})
-      .map(([salon, datos]) => ({
-        salon,
-        totalPuntos: Number(datos.suma),
-        promedioPuntos: Number((datos.suma / datos.conteo).toFixed(2)),
-        diasEvaluados: datos.conteo
-      }))
+      .map(([salon, datos]) => {
+        // Calcular días reales entre primera y última fecha
+        const fechasUnicas = [...new Set(datos.fechas)].sort()
+        const diasReales = fechasUnicas.length > 0 ? fechasUnicas.length : 1
+        
+        return {
+          salon,
+          totalPuntos: Number(datos.suma),
+          promedioPuntos: Number((datos.suma / datos.conteo).toFixed(2)),
+          diasEvaluados: diasReales,
+          fechasUnicas: fechasUnicas // Para debug si se necesita
+        }
+      })
       .sort((a, b) => b.promedioPuntos - a.promedioPuntos) // Ordenar por promedio, no por suma
       .map((item, index) => ({
         ...item,

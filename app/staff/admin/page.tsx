@@ -14,7 +14,8 @@ import {
   getAllEvaluacionesToday,
   getAllSalonesEvaluadosToday,
   getAlumnosPorSalon,
-  getResumenSemanal
+  getResumenSemanal,
+  getPuntajesPorDiaYSalon
 } from "@/lib/supabaseQueries"
 import { supabase } from '@/lib/supabase'
 import {
@@ -45,12 +46,13 @@ export default function AdminPage() {
   const { data: dashboardData, loading: isLoading, lastUpdate, reload } = useManualLoad(async () => {
     const loadData = async () => {
       try {
-        const [statsData, alumnosData, invitadosData, salonData, semanalData, invitadosRankingData, campeonData, totalInvitadosData] = await Promise.all([
+        const [statsData, alumnosData, invitadosData, salonData, semanalData, puntajesDiaData, invitadosRankingData, campeonData, totalInvitadosData] = await Promise.all([
           getStatsDashboard(),
           getTopAlumnosToday(5),
           getTopInvitadosToday(3),
           getAlumnosPorSalon(),
           getResumenSemanal(),
+          getPuntajesPorDiaYSalon(),
           getRankingInvitados(7),
           getCampeonInvitados(7),
           getTotalInvitadosPeriodo(7)
@@ -64,6 +66,7 @@ export default function AdminPage() {
           topInvitados: invitadosData || [],
           alumnosPorSalon: salonData || [],
           resumenSemanal: semanalData,
+          puntajesPorDia: puntajesDiaData || [],
           rankingInvitados: invitadosRankingData || [],
           campeonInvitadosActual: campeonData,
           totalInvitadosPeriodo: totalInvitadosData || 0
@@ -177,6 +180,7 @@ export default function AdminPage() {
     rankingSalones: [],
     campeonInvitados: null
   }
+  const puntajesPorDia = dashboardData?.puntajesPorDia || []
   const rankingInvitados = dashboardData?.rankingInvitados || []
   const campeonInvitadosActual = dashboardData?.campeonInvitadosActual || null
   const totalInvitadosPeriodo = dashboardData?.totalInvitadosPeriodo || 0
@@ -357,7 +361,126 @@ export default function AdminPage() {
             </CardContent>
           </Card>
 
-          {/* 2. RESUMEN SEMANAL (Datos Estratégicos) */}
+          {/* 2. TABLERO DE PUNTAJES RÁPIDO (Tipo Ludo Infantil) */}
+          <div className="mb-6">
+            <div className="text-center mb-4">
+              <h2 className="text-2xl font-bold text-foreground mb-2">
+                🎲 Tablero de Puntajes Diarios 🎲
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                ¡El juego diario de los salones! Mira quién va ganando hoy 🌟
+              </p>
+            </div>
+            {isLoading ? (
+              <div className="text-center py-8">🎯 Cargando tablero...</div>
+            ) : puntajesPorDia.length > 0 ? (
+              <div className="bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 rounded-xl p-3 sm:p-4 md:p-6 border-2 border-purple-300 shadow-lg">
+                {/* Tablero tipo juego */}
+                <div className="grid grid-cols-1 gap-3 sm:gap-4">
+                {(() => {
+                  console.log('🎮 Datos que llegan al tablero:', puntajesPorDia)
+                  const agrupados = puntajesPorDia.reduce((acc: Record<string, any[]>, item) => {
+                    if (!acc[item.fecha]) {
+                      acc[item.fecha] = []
+                    }
+                    acc[item.fecha].push(item)
+                    return acc
+                  }, {})
+                  console.log('🗓️ Fechas agrupadas:', Object.keys(agrupados))
+                  return Object.entries(agrupados)
+                })().map(([fecha, puntajes]) => (
+                    <div key={fecha} className="bg-white/80 rounded-lg p-3 sm:p-4 shadow-md">
+                      {/* Fecha del día responsive */}
+                      <div className="text-center mb-2 sm:mb-3">
+                        <span className="text-xs sm:text-sm font-bold text-purple-700 bg-purple-100 px-2 sm:px-3 py-1 sm:py-1 rounded-full">
+                          📅 {new Date(fecha + 'T00:00:00').toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'short' })}
+                        </span>
+                      </div>
+                      
+                      {/* Celdas de salones tipo tablero - Responsive */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-3">
+                        {classrooms.map((classroom) => {
+                          const puntajeDelDia = puntajes.find(p => p.salon.toLowerCase() === classroom.name)
+                          const IconComponent = classroom.icon
+                          
+                          return (
+                            <div
+                              key={`${classroom.name}-${fecha}`}
+                              className={`relative rounded-lg border-2 p-2 sm:p-3 text-center transition-all duration-200 hover:scale-105 hover:shadow-lg ${
+                                puntajeDelDia 
+                                  ? `${classroom.color} border-opacity-60 shadow-sm` 
+                                  : 'bg-gray-100 border-gray-300 border-dashed opacity-60'
+                              }`}
+                            >
+                              {/* Icono responsive */}
+                              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/80 flex items-center justify-center mx-auto mb-1 sm:mb-2 shadow-sm">
+                                <IconComponent className={`w-4 h-4 sm:w-6 sm:h-6 ${puntajeDelDia ? '' : 'opacity-40'}`} />
+                              </div>
+                              
+                              {/* Nombre del salón responsive */}
+                              <div className={`text-xs font-bold mb-1 capitalize ${
+                                puntajeDelDia ? 'text-gray-800' : 'text-gray-400'
+                              }`}>
+                                {classroom.name}
+                              </div>
+                              
+                              {/* Puntaje o esperando responsive */}
+                              {puntajeDelDia ? (
+                                <div className="relative">
+                                  <span className="text-sm sm:text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
+                                    {puntajeDelDia.puntaje_promedio}
+                                  </span>
+                                  <span className="text-xs text-purple-600 block sm:inline"> pts</span>
+                                  
+                                  {/* Estrella para el mejor del día responsive */}
+                                  {puntajes[0]?.salon.toLowerCase() === classroom.name && (
+                                    <div className="absolute -top-1 -right-1 bg-yellow-400 rounded-full p-1 shadow-md">
+                                      <Star className="w-2 h-2 sm:w-3 sm:h-3 text-yellow-800 fill-yellow-800" />
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="text-xs text-gray-400">
+                                  🎯
+                                  <span className="hidden sm:inline">🎲</span>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                      
+                      {/* Línea separadora entre días */}
+                      <div className="mt-2 sm:mt-3 border-b-2 border-dashed border-purple-200"></div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Pie del tablero */}
+                <div className="text-center mt-3 sm:mt-4">
+                  <div className="inline-flex flex-wrap items-center justify-center gap-2 sm:gap-4 text-xs text-purple-700 bg-purple-50 px-3 sm:px-4 py-2 rounded-full">
+                    <span>🎮 Juego</span>
+                    <span className="hidden sm:inline">•</span>
+                    <span>⭐ Líder</span>
+                    <span className="hidden sm:inline">•</span>
+                    <span>🎯 ¡Sigue!</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <Card className="border-border bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+                <CardContent className="text-center py-12">
+                  <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-4">
+                    <div className="text-3xl">🎲</div>
+                  </div>
+                  <p className="text-lg text-muted-foreground mb-2">El tablero está esperando a los jugadores 🎮</p>
+                  <p className="text-sm text-muted-foreground">Los puntajes aparecerán cuando comience el juego diario</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* 3. RESUMEN SEMANAL (Datos Estratégicos) */}
           <div className="mb-6">
             <div className="text-center mb-4">
               <h2 className="text-2xl font-bold text-foreground mb-2">
@@ -470,7 +593,20 @@ export default function AdminPage() {
                                 <p className="font-semibold capitalize text-sm">{salon.salon}</p>
                                 <p className="text-xs text-muted-foreground">{salon.promedioPuntos} pts promedio</p>
                                 <p className="text-xs text-blue-600">
-                                  {(salon as any).diasEvaluados} {(salon as any).diasEvaluados === 1 ? 'evaluación' : 'evaluaciones'}
+                                  {(salon as any).diasEvaluados === 1 
+                                    ? '📅 1 día evaluado' 
+                                    : (salon as any).diasEvaluados === 2 
+                                      ? '📅 2 días evaluados'
+                                      : (salon as any).diasEvaluados === 3
+                                        ? '📅 3 días evaluados'
+                                        : (salon as any).diasEvaluados === 4
+                                          ? '📅 4 días evaluados'
+                                          : (salon as any).diasEvaluados === 5
+                                            ? '📅 5 días evaluados'
+                                            : (salon as any).diasEvaluados === 6
+                                              ? '📅 6 días evaluados'
+                                              : `📅 ${(salon as any).diasEvaluados} días evaluados`
+                                  }
                                 </p>
                               </div>
                             </div>
