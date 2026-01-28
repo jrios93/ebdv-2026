@@ -132,22 +132,33 @@ export async function obtenerSalonesConEstado(fecha?: string): Promise<Array<Sal
     console.log('✅ Evaluaciones cargadas:', evaluaciones?.length || 0, 'registros');
     
     return salones.map(salon => {
-      const evaluacionHoy = evaluaciones?.find(e => e.classroom_id === salon.id);
+      // Contar cuántos jurados han evaluado este salón hoy
+      const evaluacionesSalonHoy = evaluaciones?.filter(e => e.classroom_id === salon.id) || [];
+      const totalJuradosEvaluaron = evaluacionesSalonHoy.length;
       
       let estado: "pendiente" | "en_evaluacion" | "completado" = "pendiente";
+      let jurados_evaluaron = 0;
       
-      if (evaluacionHoy) {
-        // Si tiene evaluación hoy, está completado (suponemos que la evaluación es rápida)
-        estado = "completado";
-      } else {
-        // Podrías agregar lógica aquí para determinar si está en evaluación
-        // Por ahora, si no tiene evaluación y es el día actual, está pendiente
+      if (totalJuradosEvaluaron === 0) {
+        // Nadie ha evaluado aún
         estado = "pendiente";
+        jurados_evaluaron = 0;
+      } else if (totalJuradosEvaluaron < 3) {
+        // Algunos jurados han evaluado pero no todos
+        estado = "en_evaluacion";
+        jurados_evaluaron = totalJuradosEvaluaron;
+      } else {
+        // Los 3 jurados ya han evaluado
+        estado = "completado";
+        jurados_evaluaron = totalJuradosEvaluaron;
       }
+      
+      console.log(`🏫 Salón ${salon.nombre}: ${totalJuradosEvaluaron}/3 evaluaciones -> ${estado}`);
       
       return {
         ...salon,
         estado,
+        jurados_evaluaron,
         total_jurados: 3 // Número fijo de jurados por evaluación
       };
     });
