@@ -25,6 +25,7 @@ import {
   getInvitadosLevel
 } from "@/lib/invitados"
 import { SimpleResetManager } from "@/components/admin/simple-reset-manager"
+import { TableroCaminoLudo } from "@/components/admin/tablero-progreso-diario"
 import { useManualLoad } from "@/hooks/useManualLoad"
 import { FaBible, FaDove, FaSeedling } from "react-icons/fa"
 import { IoSunnySharp } from "react-icons/io5"
@@ -491,74 +492,28 @@ export default function AdminPage() {
               </p>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Ranking Alumnos Semanal */}
-              <Card className="border-border bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200 shadow-lg">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Trophy className="w-6 h-6 text-yellow-600" />
-                    Ganadores por Salón
-                    <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">Premio #1 de cada salón</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {isLoading ? (
-                    <div className="text-center py-8">Cargando ranking...</div>
-                  ) : resumenSemanal.rankingAlumnos.length > 0 ? (
-                    <div className="space-y-3">
-                      {resumenSemanal.rankingAlumnos.slice(0, 5).map((item, index) => {
-                        const isFirstInClassroom = index === 0 ||
-                          (index > 0 && resumenSemanal.rankingAlumnos[index - 1].alumno.classroom_id !== item.alumno.classroom_id)
+            </div>
 
-                        const salonNombre = (item.alumno as any).classrooms?.nombre || 'sin-salon'
-                        const classroom = classrooms.find(c => c.name === salonNombre)
-                        const salonColor = classroom?.color || "bg-gray-100 text-gray-700 border-gray-300"
+            {/* Tablero de Progreso Diario (ancho completo) */}
+            <Card className="border-border bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200 shadow-lg mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-bold">
+                    📊
+                  </div>
+                  Tablero de Asistencia Diario
+                  <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded">Progreso por salón y día</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TableroCaminoLudo 
+                  classrooms={classrooms}
+                />
+              </CardContent>
+            </Card>
 
-                        return (
-                          <div key={item.alumno.id} className={`relative rounded-lg p-3 transition-all ${index === 0
-                            ? 'bg-gradient-to-r from-yellow-100 to-orange-100 border-2 border-yellow-300 shadow-sm'
-                            : 'bg-white/70'
-                            }`}>
-                            <div className="absolute -top-2 left-2">
-                              <span className={`text-xs px-2 py-1 rounded-full font-bold ${salonColor}`}>
-                                {salonNombre}
-                              </span>
-                            </div>
-                            {index === 0 && (
-                              <div className="absolute -top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full font-bold">
-                                🏆
-                              </div>
-                            )}
-                            <div className="flex items-center justify-between mt-3">
-                              <div className="flex items-center gap-3">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold shadow ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-orange-500' :
-                                  index === 1 ? 'bg-gray-400' :
-                                    index === 2 ? 'bg-orange-600' : 'bg-gray-300'
-                                  }`}>
-                                  {item.posicion}
-                                </div>
-                                <div>
-                                  <p className="font-semibold text-sm">{item.alumno.nombre} {item.alumno.apellidos}</p>
-                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <span>{item.totalPuntos} pts</span>
-                                    {item.totalInvitados > 0 && (
-                                      <span className="text-green-600">👥 {item.totalInvitados}</span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <Trophy className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p className="text-sm">Sin datos semanales aún</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+            {/* Rankings en 2 columnas debajo */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
               {/* Ranking Salones Semanal */}
               <Card className="border-border bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 shadow-lg">

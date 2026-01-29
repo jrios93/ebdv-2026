@@ -286,7 +286,7 @@ export async function getStatsDashboard(): Promise<{
         estado
       `)
       .eq('fecha', today)
-      // Mostrar todos los salones evaluados hoy (completado + en_progreso)
+    // Mostrar todos los salones evaluados hoy (completado + en_progreso)
 
     let mejorClassroom = null
     if (grupalesHoy && grupalesHoy.length > 0) {
@@ -811,12 +811,12 @@ export async function getAlumnosPorSalon(): Promise<Array<{
       .gte('fecha', '2026-01-25') // Últimos días
       .order('fecha', { ascending: false })
       .limit(1)
-    
+
     if (diasError) throw diasError
-    
+
     // Usar el último día con evaluaciones, si no hay datos usar hoy
-    const fechaConDatos = diasConEvaluaciones && diasConEvaluaciones.length > 0 
-      ? diasConEvaluaciones[0].fecha 
+    const fechaConDatos = diasConEvaluaciones && diasConEvaluaciones.length > 0
+      ? diasConEvaluaciones[0].fecha
       : today
 
     // Obtener todos los alumnos activos
@@ -831,23 +831,24 @@ export async function getAlumnosPorSalon(): Promise<Array<{
     if (errorAlumnos) throw errorAlumnos
 
     // Obtener evaluaciones del día con datos para ver quiénes asistieron
-    // Si un alumno tiene CUALQUIER calificación, cuenta como asistencia (incluso si es 0)
+    // SOLO se considera asistencia si puntualidad_asistencia > 0
     const { data: evaluacionesHoy, error: evaluacionesError } = await supabase
       .from('puntuacion_individual_diaria')
       .select(`
         alumno_id
       `)
       .eq('fecha', fechaConDatos) // Usar el día que realmente tiene datos
+      .gt('puntualidad_asistencia', 0) // Solo quienes tienen puntualidad > 0
 
     if (evaluacionesError) throw evaluacionesError
 
     // DEBUG: Mostrar qué está pasando
     console.log('🔍 DEBUG - getAlumnosPorSalon():')
     console.log('📅 Fecha Usando:', fechaConDatos)
-    console.log('📝 Total Evaluaciones Hoy:', evaluacionesHoy?.length)
-    console.log('👥 Alumnos con Evaluaciones Hoy:', Array.from(new Set(evaluacionesHoy?.map(e => e.alumno_id))))
+    console.log('📝 Total con Asistencia Real (>0):', evaluacionesHoy?.length)
+    console.log('👥 Alumnos con Puntualidad > 0 Hoy:', Array.from(new Set(evaluacionesHoy?.map(e => e.alumno_id))))
 
-    // Crear set de IDs de alumnos que asistieron hoy
+    // Crear set de IDs de alumnos que REALMENTE asistieron hoy (puntualidad_asistencia > 0)
     const asistenciasSet = new Set(evaluacionesHoy?.map(e => e.alumno_id) || [])
 
     // Agrupar por salón y contar tanto inscritos como asistidos
@@ -860,7 +861,7 @@ export async function getAlumnosPorSalon(): Promise<Array<{
 
       acc[salon].inscritos += 1
 
-      // Si este alumno asistió hoy
+      // Si este alumno REALMENTE asistió hoy (puntualidad_asistencia > 0)
       if (asistenciasSet.has(alumno.id)) {
         acc[salon].asistidos += 1
       }
@@ -885,7 +886,7 @@ export async function getAlumnosPorSalon(): Promise<Array<{
 export async function getPuntajesPorDiaYSalon(): Promise<Array<PuntajePorDiaYSalon> | null> {
   try {
     console.log('🔍 Buscando puntajes por día y salón...')
-    
+
     // Consulta directa usando el campo 'preguntas' como en tu SQL
     const { data, error } = await supabase
       .from('puntuacion_grupal_diaria')
@@ -918,7 +919,7 @@ export async function getPuntajesPorDiaYSalon(): Promise<Array<PuntajePorDiaYSal
     // Agrupar exactamente como en tu SQL: GROUP BY pgd.fecha, c.nombre, c.color
     const agrupado = data.reduce((acc: Record<string, any>, item: any) => {
       const key = `${item.fecha}-${item.classrooms.nombre}-${item.classrooms.color}`
-      
+
       if (!acc[key]) {
         acc[key] = {
           fecha: item.fecha,
@@ -928,10 +929,10 @@ export async function getPuntajesPorDiaYSalon(): Promise<Array<PuntajePorDiaYSal
           total_preguntas: 0
         }
       }
-      
+
       acc[key].jurados_evaluaron += 1
       acc[key].total_preguntas += item.preguntas || 0
-      
+
       return acc
     }, {})
 
@@ -962,6 +963,195 @@ export async function getPuntajesPorDiaYSalon(): Promise<Array<PuntajePorDiaYSal
     return null
   }
 }
+
+// Nuevo tipo para el tablero de progreso diario
+export interface TableroDiarioPorSalon {
+  salon: string
+  dia: string
+  alumnos: Array<{
+    alumno: Alumno
+    puntosDia: number
+    totalAcumulado: number
+    esDestacado: boolean
+  }>
+}
+
+export async function getTableroProgresoDiario(dias: number = 7): Promise<TableroDiarioPorSalon[]> {
+  try {
+    const today = getFechaHoyPeru()
+    console.log('🔍 Obteniendo tablero de progreso diario para últimos', dias, 'días')
+
+    const { data: evaluaciones, error: evaluacionesError } = await supabase
+      .from('puntuacion_individual_diaria')
+      .select(`
+        *,
+        alumnos!inner(
+          id,
+          nombre,
+          apellidos,
+          classroom_id,
+          classrooms!classroom_id(nombre)
+        )
+      `)
+      .gte('fecha', new Date(Date.now() - (dias * 24 * 60 * 60 * 1000)).toISOString().split('T')[0])
+      .lte('fecha', today)
+      .gt('puntualidad_asistencia', 0)
+      .order('fecha', { ascending: false })
+
+    if (evaluacionesError) {
+      console.error('❌ Error obteniendo evaluaciones:', evaluacionesError)
+      throw evaluacionesError
+    }
+
+    console.log('📊 Evaluaciones encontradas:', evaluaciones?.length)
+
+    if (!evaluaciones || evaluaciones.length === 0) {
+      return []
+    }
+
+    // 1. Agrupar por salón y día
+    const datosPorSalonDia = evaluaciones.reduce((acc: Record<string, any>, item: any) => {
+      const salon = item.alumnos.classrooms?.nombre || 'sin-salon'
+      const dia = item.fecha
+      const key = `${salon}-${dia}`
+
+      if (!acc[key]) {
+        acc[key] = {
+          salon,
+          dia,
+          alumnos: []
+        }
+      }
+
+      const puntosDia = (item.actitud || 0) +
+        (item.puntualidad_asistencia || 0) +
+        (item.animo || 0) +
+        (item.trabajo_manual || 0) +
+        (item.verso_memoria || 0) +
+        (item.aprestamiento_biblico || 0)
+
+      acc[key].alumnos.push({
+        alumno: {
+          id: item.alumnos.id,
+          nombre: item.alumnos.nombre,
+          apellidos: item.alumnos.apellidos,
+          edad: 0,
+          genero: 'niño' as const,
+          nombre_padre: '',
+          telefono: '',
+          classroom_id: item.alumnos.classroom_id,
+          activo: true,
+          fecha_inscripcion: ''
+        },
+        puntosDia,
+        totalAcumulado: 0, // Se calculará
+        esDestacado: false
+      })
+
+      return acc
+    }, {})
+
+    // 2. Calcular acumulados para cada día
+    const salones = [...new Set(evaluaciones.map((e: any) => e.alumnos.classrooms?.nombre))]
+
+    salones.forEach(salon => {
+      // Obtener todos los días para este salón, ordenados
+      const diasSalon = Object.keys(datosPorSalonDia)
+        .filter(key => key.startsWith(salon + '-'))
+        .map(key => datosPorSalonDia[key].dia)
+        .sort() // Más antiguo a más reciente
+
+      // Para cada alumno en cada día, calcular acumulado progresivo
+      diasSalon.forEach((dia, diaIndex) => {
+        const key = `${salon}-${dia}`
+        const grupo = datosPorSalonDia[key]
+
+        if (!grupo) return
+
+        // Para cada alumno en este día
+        grupo.alumnos.forEach((alumnoGrupo: any) => {
+          let totalAcumulado = alumnoGrupo.puntosDia
+
+          // Sumar puntos de días anteriores para el MISMO alumno
+          for (let i = 0; i < diaIndex; i++) {
+            const diaAnterior = diasSalon[i]
+            const keyAnterior = `${salon}-${diaAnterior}`
+            const grupoAnterior = datosPorSalonDia[keyAnterior]
+
+            if (grupoAnterior) {
+              const alumnoAnterior = grupoAnterior.alumnos.find((a: any) =>
+                a.alumno.id === alumnoGrupo.alumno.id
+              )
+              if (alumnoAnterior) {
+                totalAcumulado += alumnoAnterior.puntosDia
+              }
+            }
+          }
+
+          alumnoGrupo.totalAcumulado = totalAcumulado
+        })
+      })
+    })
+
+    // 3. Determinar destacados por ACUMULADO en cada día
+    Object.values(datosPorSalonDia).forEach((grupo: any) => {
+      if (grupo.alumnos.length === 0) return
+
+      // NO REORDENAR aquí - mantener el orden original o por puntosDia
+      // Solo determinar quiénes son destacados por acumulado
+
+      // Encontrar el/los mejores acumulados
+      // Opción A: Solo el mejor
+      const mejorAcumulado = Math.max(...grupo.alumnos.map((a: any) => a.totalAcumulado))
+
+      // Opción B: Todos los que están cerca del mejor (90% o más)
+      const umbralDestacado = mejorAcumulado * 0.9
+
+      grupo.alumnos.forEach((alumno: any) => {
+        // Si quieres solo el mejor absoluto:
+        // alumno.esDestacado = alumno.totalAcumulado === mejorAcumulado && mejorAcumulado > 0
+
+        // Si quieres flexibilidad (recomendado):
+        alumno.esDestacado = alumno.totalAcumulado >= umbralDestacado &&
+          alumno.totalAcumulado > 0 &&
+          mejorAcumulado > 0
+      })
+
+      console.log(`🏆 ${grupo.salon} - ${grupo.dia}:`, {
+        totalAlumnos: grupo.alumnos.length,
+        mejorAcumulado,
+        umbralDestacado,
+        destacados: grupo.alumnos.filter((a: any) => a.esDestacado).length,
+        alumnos: grupo.alumnos
+          .filter((a: any) => a.esDestacado)
+          .map((a: any) => ({
+            nombre: a.alumno.nombre.split(' ')[0],
+            puntosDia: a.puntosDia,
+            acumulado: a.totalAcumulado
+          }))
+      })
+    })
+
+    // 4. Ordenar resultado final
+    const resultado = Object.values(datosPorSalonDia)
+      .sort((a: any, b: any) => {
+        if (a.salon !== b.salon) {
+          return a.salon.localeCompare(b.salon)
+        }
+        return b.dia.localeCompare(a.dia) // Más reciente primero
+      })
+
+    console.log('✅ Tablero procesado:', resultado.length, 'grupos')
+    return resultado
+
+  } catch (error) {
+    console.error('❌ Error:', error)
+    return []
+  }
+}
+
+
+
 
 export async function getResumenSemanal(): Promise<{
   rankingAlumnos: Array<{
@@ -1112,7 +1302,7 @@ export async function getResumenSemanal(): Promise<{
         // Calcular días reales entre primera y última fecha
         const fechasUnicas = [...new Set(datos.fechas)].sort()
         const diasReales = fechasUnicas.length > 0 ? fechasUnicas.length : 1
-        
+
         return {
           salon,
           totalPuntos: Number(datos.suma),
@@ -1134,14 +1324,14 @@ export async function getResumenSemanal(): Promise<{
 
     // 3. Campeón de invitados - Mantener la lógica original para no romper tipos
     const alumnosConInvitados = rankingGeneralAlumnos.filter((a: any) => a.totalInvitados > 0)
-    
+
     console.log('🔍 DEBUG: Ranking completo de alumnos con invitaciones:')
     rankingGeneralAlumnos.forEach((alumno: any, index) => {
       if (alumno.totalInvitados > 0) {
         console.log(`   ${index + 1}. ${alumno.alumno.nombre} ${alumno.alumno.apellidos}: ${alumno.totalInvitados} invitados (Salón: ${alumno.alumno.classrooms?.nombre || 'N/A'})`)
       }
     })
-    
+
     const campeonInvitados = alumnosConInvitados.length > 0
       ? alumnosConInvitados.reduce((a: any, b: any) =>
         a.totalInvitados > b.totalInvitados ? a : b
@@ -1153,7 +1343,7 @@ export async function getResumenSemanal(): Promise<{
         console.log(`   ${index + 1}. ${alumno.alumno.nombre} ${alumno.alumno.apellidos}: ${alumno.totalInvitados} invitaciones (Salón: ${alumno.alumno.classrooms?.nombre || 'N/A'})`)
       }
     })
-    
+
     console.log('📊 Campeón invitados (selección por reducer):')
     if (campeonInvitados) {
       console.log(`   🏆 ${campeonInvitados.alumno.nombre} ${campeonInvitados.alumno.apellidos} (${campeonInvitados.totalInvitados} invitados)`)
