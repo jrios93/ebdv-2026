@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Trophy, Users, Calendar, Crown } from "lucide-react"
 import { FaSeedling, FaDove, FaBible } from "react-icons/fa"
@@ -46,6 +46,7 @@ function TooltipAlumno({ alumno, classroom, isDestacado, children }: {
   return (
     <div
       className="relative inline-block"
+      style={{ zIndex: 9998 }}
       onMouseEnter={(e) => {
         // Calcular si hay espacio arriba para el tooltip
         const rect = e.currentTarget.getBoundingClientRect()
@@ -58,23 +59,25 @@ function TooltipAlumno({ alumno, classroom, isDestacado, children }: {
     >
       {children}
 
-      {showTooltip && (
+       {showTooltip && (
         <div
-          className={`absolute z-50 px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg shadow-xl min-w-[180px] whitespace-nowrap
+          className={`absolute z-[9999] px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg shadow-xl min-w-[180px] whitespace-nowrap
             ${tooltipPosition === 'top'
               ? 'bottom-full mb-2 left-1/2 transform -translate-x-1/2'
               : 'top-full mt-2 left-1/2 transform -translate-x-1/2'
             }`}
+          style={{ zIndex: 9999 }}
         >
           {/* Triángulo del tooltip */}
-          <div className={`absolute w-3 h-3 bg-white border border-gray-200 transform rotate-45 
+          <div className={`absolute w-3 h-3 bg-white border border-gray-200 transform rotate-45 z-[9999] 
             ${tooltipPosition === 'top'
               ? '-bottom-1.5 left-1/2 -translate-x-1/2 border-t-0 border-l-0'
               : '-top-1.5 left-1/2 -translate-x-1/2 border-b-0 border-r-0'
             }`}
+            style={{ zIndex: 9999 }}
           />
 
-          <div className="relative z-10">
+          <div className="relative z-[9999]" style={{ zIndex: 9999 }}>
             <div className="flex items-center gap-2 mb-2">
               <div className={`w-3 h-3 rounded-full ${classroom.bgColor.replace('bg-', 'bg-')}`}></div>
               <div className="font-bold text-gray-800">{alumno.alumno.nombre}</div>
@@ -234,7 +237,7 @@ export function TableroCaminoLudo() {
               const diaMes = fecha.getDate()
               const mes = fecha.toLocaleDateString('es-PE', { month: 'short' })
 
-              return (
+               return (
                 <motion.div
                   key={dia}
                   initial={{ opacity: 0, x: -20 }}
@@ -242,34 +245,32 @@ export function TableroCaminoLudo() {
                   transition={{ delay: diaIndex * 0.1 }}
                   className="relative"
                 >
-                  {/* Marcador de día - Centro */}
-                  <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
+                  {/* Encabezado de día - Arriba */}
+                  <div className="mb-6 text-center">
                     <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      className="bg-white border-2 border-blue-500 rounded-lg p-3 shadow-lg min-w-[140px] text-center backdrop-blur-sm bg-white/95"
+                      whileHover={{ scale: 1.02 }}
+                      className="inline-flex items-center gap-3 bg-white border-2 border-blue-500 rounded-lg p-4 shadow-lg backdrop-blur-sm bg-white/95"
                     >
-                      <div className="flex items-center justify-center gap-2 mb-1">
-                        <Calendar className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                        <div className="text-sm font-bold text-gray-800">
-                          {diaSemana} {diaMes} {mes}
-                        </div>
+                      <Calendar className="w-5 h-5 text-blue-500 flex-shrink-0" />
+                      <div className="text-lg font-bold text-gray-800">
+                        {diaSemana} {diaMes} {mes}
                       </div>
-                      <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                      <div className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
                         Día {todosLosDias.length - diaIndex}
                       </div>
                     </motion.div>
                   </div>
 
-                  {/* Salones a los lados */}
-                  <div className="flex flex-col md:flex-row justify-between items-stretch gap-4 md:gap-8">
+                   {/* Salones a los lados */}
+                   <div className="flex flex-col md:flex-row justify-between items-stretch gap-6 md:gap-12">
                     {/* Lado izquierdo - Primeros salones */}
                     <div className="flex-1 space-y-4">
                       {classrooms.slice(0, Math.ceil(classrooms.length / 2)).map((classroom) => {
                         const datosSalon = datosPorSalon[classroom.name] || []
                         const datosDia = datosSalon.find(d => d.dia === dia)
                         const alumnosDelDia = datosDia?.alumnos || []
-                        const destacadosDelDia = alumnosDelDia.filter(a => a.esDestacado)
-                        const regularDelDia = alumnosDelDia.filter(a => !a.esDestacado)
+                        const destacadosDelDia = alumnosDelDia.filter(a => a.esDestacado).sort((a, b) => b.totalAcumulado - a.totalAcumulado)
+                        const regularDelDia = alumnosDelDia.filter(a => !a.esDestacado).sort((a, b) => b.totalAcumulado - a.totalAcumulado)
 
                         return (
                           <motion.div
@@ -302,27 +303,52 @@ export function TableroCaminoLudo() {
                                         Destacados
                                       </span>
                                     </div>
-                                    <div className="flex flex-wrap gap-3">
-                                      {destacadosDelDia.map((alumno) => (
-                                        <TooltipAlumno
-                                          key={`destacado-${alumno.alumno.id}`}
-                                          alumno={alumno}
-                                          classroom={classroom}
-                                          isDestacado={true}
-                                        >
-                                          <motion.div
-                                            whileHover={{ scale: 1.2, y: -3 }}
-                                            className={`w-9 h-9 rounded-full ${classroom.textColor.replace('text-', 'bg-').replace('-700', '-600')} border-2 border-yellow-400 shadow-lg cursor-pointer flex items-center justify-center relative`}
-                                          >
-                                            <span className={` font-semibold ${classroom.name === "luz" ? "text-yellow-700" : "text-white"}`}>
-                                              {alumno.alumno.nombre.charAt(0)}
-                                            </span>
-                                            {/* Puntito amarillo indicador de destacado */}
-                                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border border-white"></div>
-                                          </motion.div>
-                                        </TooltipAlumno>
-                                      ))}
-                                    </div>
+                                     <div className="flex flex-wrap items-center gap-1">
+                                       {destacadosDelDia.map((alumno, index) => {
+                                         // Calcular el puntaje máximo entre destacados
+                                         const puntajeMaximo = destacadosDelDia.length > 0 ? Math.max(...destacadosDelDia.map(a => a.totalAcumulado)) : 0
+                                         const esMejorPuntaje = alumno.totalAcumulado === puntajeMaximo
+                                         
+                                         return (
+                                           <React.Fragment key={`destacado-${alumno.alumno.id}`}>
+                                             <TooltipAlumno
+                                               alumno={alumno}
+                                               classroom={classroom}
+                                               isDestacado={true}
+                                             >
+                                               <motion.div
+                                                 whileHover={{ scale: 1.2, y: -3 }}
+                                                 className={`w-9 h-9 rounded-full ${classroom.textColor.replace('text-', 'bg-').replace('-700', '-600')} border-2 border-yellow-400 shadow-lg cursor-pointer flex items-center justify-center relative`}
+                                               >
+                                                 <span className={` font-semibold ${classroom.name === "luz" ? "text-yellow-700" : "text-white"}`}>
+                                                   {alumno.alumno.nombre.charAt(0)}
+                                                 </span>
+                                                 {/* Puntito amarillo indicador de destacado */}
+                                                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border border-white"></div>
+                                                 {/* Trofeo para el mejor puntaje */}
+                                                 {esMejorPuntaje && (
+                                                   <div className="absolute -top-2 -left-2">
+                                                     <Trophy className="w-4 h-4 text-yellow-500 drop-shadow-sm" />
+                                                   </div>
+                                                 )}
+                                               </motion.div>
+                                             </TooltipAlumno>
+                                             {index < destacadosDelDia.length - 1 && (
+                                               <div className="w-3 h-px bg-gray-300 mx-1"></div>
+                                             )}
+                                           </React.Fragment>
+                                         )
+                                       })}
+                                     </div>
+                                  </div>
+                                )}
+
+                                {/* Separador visual entre niveles */}
+                                {destacadosDelDia.length > 0 && regularDelDia.length > 0 && (
+                                  <div className="flex items-center justify-center py-2">
+                                    <div className="h-px bg-gray-300 w-full"></div>
+                                    <div className="px-2 text-xs text-gray-400">|</div>
+                                    <div className="h-px bg-gray-300 w-full"></div>
                                   </div>
                                 )}
 
@@ -332,22 +358,26 @@ export function TableroCaminoLudo() {
                                     <div className={`text-xs font-medium ${classroom.textMutedColor} mb-2`}>
                                       Asistentes
                                     </div>
-                                    <div className="flex flex-wrap gap-2">
+                                    <div className="flex flex-wrap items-center gap-1">
                                       {regularDelDia.map((alumno, index) => (
-                                        <TooltipAlumno
-                                          key={`regular-${alumno.alumno.id}`}
-                                          alumno={alumno}
-                                          classroom={classroom}
-                                          isDestacado={false}
-                                        >
-                                          <motion.div
-                                            whileHover={{ scale: 1.1, y: -2 }}
-                                            className={`w-7 h-7 rounded-full ${classroom.textColor.replace('text-', 'bg-').replace('-700', '-400')} border border-white shadow-sm cursor-pointer`}
-                                            style={{
-                                              transform: `translateX(${index * 1.5}px)`
-                                            }}
-                                          />
-                                        </TooltipAlumno>
+                                        <React.Fragment key={`regular-${alumno.alumno.id}`}>
+                                          <TooltipAlumno
+                                            alumno={alumno}
+                                            classroom={classroom}
+                                            isDestacado={false}
+                                          >
+                                            <motion.div
+                                              whileHover={{ scale: 1.1, y: -2 }}
+                                              className={`w-7 h-7 rounded-full ${classroom.textColor.replace('text-', 'bg-').replace('-700', '-400')} border border-white shadow-sm cursor-pointer`}
+                                              style={{
+                                                transform: `translateX(${index * 1.5}px)`
+                                              }}
+                                            />
+                                          </TooltipAlumno>
+                                          {index < regularDelDia.length - 1 && (
+                                            <div className="w-2 h-px bg-gray-200 mx-0.5"></div>
+                                          )}
+                                        </React.Fragment>
                                       ))}
                                     </div>
                                   </div>
@@ -369,8 +399,8 @@ export function TableroCaminoLudo() {
                         const datosSalon = datosPorSalon[classroom.name] || []
                         const datosDia = datosSalon.find(d => d.dia === dia)
                         const alumnosDelDia = datosDia?.alumnos || []
-                        const destacadosDelDia = alumnosDelDia.filter(a => a.esDestacado)
-                        const regularDelDia = alumnosDelDia.filter(a => !a.esDestacado)
+                        const destacadosDelDia = alumnosDelDia.filter(a => a.esDestacado).sort((a, b) => b.totalAcumulado - a.totalAcumulado)
+                        const regularDelDia = alumnosDelDia.filter(a => !a.esDestacado).sort((a, b) => b.totalAcumulado - a.totalAcumulado)
 
                         return (
                           <motion.div
@@ -403,27 +433,52 @@ export function TableroCaminoLudo() {
                                         Destacados
                                       </span>
                                     </div>
-                                    <div className="flex flex-wrap gap-3">
-                                      {destacadosDelDia.map((alumno) => (
-                                        <TooltipAlumno
-                                          key={`destacado-${alumno.alumno.id}`}
-                                          alumno={alumno}
-                                          classroom={classroom}
-                                          isDestacado={true}
-                                        >
-                                          <motion.div
-                                            whileHover={{ scale: 1.2, y: -3 }}
-                                            className={`w-9 h-9 rounded-full ${classroom.textColor.replace('text-', 'bg-').replace('-700', '-600')} border-2 border-yellow-400 shadow-lg cursor-pointer flex items-center justify-center relative`}
-                                          >
-                                            <span className={`text-xs font-bold ${classroom.name === "gracia" ? "text-red-700" : "text-white"}`}>
-                                              {alumno.alumno.nombre.charAt(0)}
-                                            </span>
-                                            {/* Puntito amarillo indicador de destacado */}
-                                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border border-white"></div>
-                                          </motion.div>
-                                        </TooltipAlumno>
-                                      ))}
-                                    </div>
+                                     <div className="flex flex-wrap items-center gap-1">
+                                       {destacadosDelDia.map((alumno, index) => {
+                                         // Calcular el puntaje máximo entre destacados
+                                         const puntajeMaximo = destacadosDelDia.length > 0 ? Math.max(...destacadosDelDia.map(a => a.totalAcumulado)) : 0
+                                         const esMejorPuntaje = alumno.totalAcumulado === puntajeMaximo
+                                         
+                                         return (
+                                           <React.Fragment key={`destacado-${alumno.alumno.id}`}>
+                                             <TooltipAlumno
+                                               alumno={alumno}
+                                               classroom={classroom}
+                                               isDestacado={true}
+                                             >
+                                               <motion.div
+                                                 whileHover={{ scale: 1.2, y: -3 }}
+                                                 className={`w-9 h-9 rounded-full ${classroom.textColor.replace('text-', 'bg-').replace('-700', '-600')} border-2 border-yellow-400 shadow-lg cursor-pointer flex items-center justify-center relative`}
+                                               >
+                                                 <span className={`text-xs font-bold ${classroom.name === "gracia" ? "text-red-700" : "text-white"}`}>
+                                                   {alumno.alumno.nombre.charAt(0)}
+                                                 </span>
+                                                 {/* Puntito amarillo indicador de destacado */}
+                                                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border border-white"></div>
+                                                 {/* Trofeo para el mejor puntaje */}
+                                                 {esMejorPuntaje && (
+                                                   <div className="absolute -top-2 -left-2">
+                                                     <Trophy className="w-4 h-4 text-yellow-500 drop-shadow-sm" />
+                                                   </div>
+                                                 )}
+                                               </motion.div>
+                                             </TooltipAlumno>
+                                             {index < destacadosDelDia.length - 1 && (
+                                               <div className="w-3 h-px bg-gray-300 mx-1"></div>
+                                             )}
+                                           </React.Fragment>
+                                         )
+                                       })}
+                                     </div>
+                                  </div>
+                                )}
+
+                                {/* Separador visual entre niveles */}
+                                {destacadosDelDia.length > 0 && regularDelDia.length > 0 && (
+                                  <div className="flex items-center justify-center py-2">
+                                    <div className="h-px bg-gray-300 w-full"></div>
+                                    <div className="px-2 text-xs text-gray-400">|</div>
+                                    <div className="h-px bg-gray-300 w-full"></div>
                                   </div>
                                 )}
 
@@ -433,22 +488,26 @@ export function TableroCaminoLudo() {
                                     <div className={`text-xs font-medium ${classroom.textMutedColor} mb-2`}>
                                       Asistentes
                                     </div>
-                                    <div className="flex flex-wrap gap-2">
+                                    <div className="flex flex-wrap items-center gap-1">
                                       {regularDelDia.map((alumno, index) => (
-                                        <TooltipAlumno
-                                          key={`regular-${alumno.alumno.id}`}
-                                          alumno={alumno}
-                                          classroom={classroom}
-                                          isDestacado={false}
-                                        >
-                                          <motion.div
-                                            whileHover={{ scale: 1.1, y: -2 }}
-                                            className={`w-7 h-7 rounded-full ${classroom.textColor.replace('text-', 'bg-').replace('-700', '-400')} border border-white shadow-sm cursor-pointer`}
-                                            style={{
-                                              transform: `translateX(${index * 1.5}px)`
-                                            }}
-                                          />
-                                        </TooltipAlumno>
+                                        <React.Fragment key={`regular-${alumno.alumno.id}`}>
+                                          <TooltipAlumno
+                                            alumno={alumno}
+                                            classroom={classroom}
+                                            isDestacado={false}
+                                          >
+                                            <motion.div
+                                              whileHover={{ scale: 1.1, y: -2 }}
+                                              className={`w-7 h-7 rounded-full ${classroom.textColor.replace('text-', 'bg-').replace('-700', '-400')} border border-white shadow-sm cursor-pointer`}
+                                              style={{
+                                                transform: `translateX(${index * 1.5}px)`
+                                              }}
+                                            />
+                                          </TooltipAlumno>
+                                          {index < regularDelDia.length - 1 && (
+                                            <div className="w-2 h-px bg-gray-200 mx-0.5"></div>
+                                          )}
+                                        </React.Fragment>
                                       ))}
                                     </div>
                                   </div>

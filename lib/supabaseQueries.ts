@@ -1029,6 +1029,7 @@ export async function getTableroProgresoDiario(dias: number = 7): Promise<Tabler
         (item.trabajo_manual || 0) +
         (item.verso_memoria || 0) +
         (item.aprestamiento_biblico || 0)
+        // Excluyendo: invitados_hoy (es opcional)
 
       acc[key].alumnos.push({
         alumno: {
