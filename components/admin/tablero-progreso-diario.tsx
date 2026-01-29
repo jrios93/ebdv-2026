@@ -314,7 +314,7 @@ export function TableroCaminoLudo() {
                                             whileHover={{ scale: 1.2, y: -3 }}
                                             className={`w-9 h-9 rounded-full ${classroom.textColor.replace('text-', 'bg-').replace('-700', '-600')} border-2 border-yellow-400 shadow-lg cursor-pointer flex items-center justify-center relative`}
                                           >
-                                            <span className={`text-xs font-bold ${classroom.name === "luz" ? "text-yellow-700" : "text-white"}`}  >
+                                            <span className={` font-semibold ${classroom.name === "luz" ? "text-yellow-700" : "text-white"}`}>
                                               {alumno.alumno.nombre.charAt(0)}
                                             </span>
                                             {/* Puntito amarillo indicador de destacado */}
@@ -415,7 +415,7 @@ export function TableroCaminoLudo() {
                                             whileHover={{ scale: 1.2, y: -3 }}
                                             className={`w-9 h-9 rounded-full ${classroom.textColor.replace('text-', 'bg-').replace('-700', '-600')} border-2 border-yellow-400 shadow-lg cursor-pointer flex items-center justify-center relative`}
                                           >
-                                            <span className="text-xs font-bold text-white">
+                                            <span className={`text-xs font-bold ${classroom.name === "gracia" ? "text-red-700" : "text-white"}`}>
                                               {alumno.alumno.nombre.charAt(0)}
                                             </span>
                                             {/* Puntito amarillo indicador de destacado */}
@@ -527,6 +527,6 @@ export function TableroCaminoLudo() {
           </div>
         </motion.div>
       </div>
-    </div>
+    </div >
   )
 }

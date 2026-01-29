@@ -378,18 +378,18 @@ export default function AdminPage() {
               <div className="bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 rounded-xl p-3 sm:p-4 md:p-6 border-2 border-purple-300 shadow-lg">
                 {/* Tablero tipo juego */}
                 <div className="grid grid-cols-1 gap-3 sm:gap-4">
-                {(() => {
-                  console.log('🎮 Datos que llegan al tablero:', puntajesPorDia)
-                  const agrupados = puntajesPorDia.reduce((acc: Record<string, any[]>, item) => {
-                    if (!acc[item.fecha]) {
-                      acc[item.fecha] = []
-                    }
-                    acc[item.fecha].push(item)
-                    return acc
-                  }, {})
-                  console.log('🗓️ Fechas agrupadas:', Object.keys(agrupados))
-                  return Object.entries(agrupados)
-                })().map(([fecha, puntajes]) => (
+                  {(() => {
+                    console.log('🎮 Datos que llegan al tablero:', puntajesPorDia)
+                    const agrupados = puntajesPorDia.reduce((acc: Record<string, any[]>, item) => {
+                      if (!acc[item.fecha]) {
+                        acc[item.fecha] = []
+                      }
+                      acc[item.fecha].push(item)
+                      return acc
+                    }, {})
+                    console.log('🗓️ Fechas agrupadas:', Object.keys(agrupados))
+                    return Object.entries(agrupados)
+                  })().map(([fecha, puntajes]) => (
                     <div key={fecha} className="bg-white/80 rounded-lg p-3 sm:p-4 shadow-md">
                       {/* Fecha del día responsive */}
                       <div className="text-center mb-2 sm:mb-3">
@@ -397,34 +397,32 @@ export default function AdminPage() {
                           📅 {new Date(fecha + 'T00:00:00').toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'short' })}
                         </span>
                       </div>
-                      
+
                       {/* Celdas de salones tipo tablero - Responsive */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-3">
                         {classrooms.map((classroom) => {
                           const puntajeDelDia = puntajes.find(p => p.salon.toLowerCase() === classroom.name)
                           const IconComponent = classroom.icon
-                          
+
                           return (
                             <div
                               key={`${classroom.name}-${fecha}`}
-                              className={`relative rounded-lg border-2 p-2 sm:p-3 text-center transition-all duration-200 hover:scale-105 hover:shadow-lg ${
-                                puntajeDelDia 
-                                  ? `${classroom.color} border-opacity-60 shadow-sm` 
+                              className={`relative rounded-lg border-2 p-2 sm:p-3 text-center transition-all duration-200 hover:scale-105 hover:shadow-lg ${puntajeDelDia
+                                  ? `${classroom.color} border-opacity-60 shadow-sm`
                                   : 'bg-gray-100 border-gray-300 border-dashed opacity-60'
-                              }`}
+                                }`}
                             >
                               {/* Icono responsive */}
                               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/80 flex items-center justify-center mx-auto mb-1 sm:mb-2 shadow-sm">
                                 <IconComponent className={`w-4 h-4 sm:w-6 sm:h-6 ${puntajeDelDia ? '' : 'opacity-40'}`} />
                               </div>
-                              
+
                               {/* Nombre del salón responsive */}
-                              <div className={`text-xs font-bold mb-1 capitalize ${
-                                puntajeDelDia ? 'text-gray-800' : 'text-gray-400'
-                              }`}>
+                              <div className={`text-xs font-bold mb-1 capitalize ${puntajeDelDia ? 'text-gray-800' : 'text-gray-400'
+                                }`}>
                                 {classroom.name}
                               </div>
-                              
+
                               {/* Puntaje o esperando responsive */}
                               {puntajeDelDia ? (
                                 <div className="relative">
@@ -432,7 +430,7 @@ export default function AdminPage() {
                                     {puntajeDelDia.puntaje_promedio}
                                   </span>
                                   <span className="text-xs text-purple-600 block sm:inline"> pts</span>
-                                  
+
                                   {/* Estrella para el mejor del día responsive */}
                                   {puntajes[0]?.salon.toLowerCase() === classroom.name && (
                                     <div className="absolute -top-1 -right-1 bg-yellow-400 rounded-full p-1 shadow-md">
@@ -450,13 +448,13 @@ export default function AdminPage() {
                           )
                         })}
                       </div>
-                      
+
                       {/* Línea separadora entre días */}
                       <div className="mt-2 sm:mt-3 border-b-2 border-dashed border-purple-200"></div>
                     </div>
                   ))}
                 </div>
-                
+
                 {/* Pie del tablero */}
                 <div className="text-center mt-3 sm:mt-4">
                   <div className="inline-flex flex-wrap items-center justify-center gap-2 sm:gap-4 text-xs text-purple-700 bg-purple-50 px-3 sm:px-4 py-2 rounded-full">
@@ -506,8 +504,7 @@ export default function AdminPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <TableroCaminoLudo 
-                  classrooms={classrooms}
+                <TableroCaminoLudo
                 />
               </CardContent>
             </Card>
@@ -548,9 +545,9 @@ export default function AdminPage() {
                                 <p className="font-semibold capitalize text-sm">{salon.salon}</p>
                                 <p className="text-xs text-muted-foreground">{salon.promedioPuntos} pts promedio</p>
                                 <p className="text-xs text-blue-600">
-                                  {(salon as any).diasEvaluados === 1 
-                                    ? '📅 1 día evaluado' 
-                                    : (salon as any).diasEvaluados === 2 
+                                  {(salon as any).diasEvaluados === 1
+                                    ? '📅 1 día evaluado'
+                                    : (salon as any).diasEvaluados === 2
                                       ? '📅 2 días evaluados'
                                       : (salon as any).diasEvaluados === 3
                                         ? '📅 3 días evaluados'
