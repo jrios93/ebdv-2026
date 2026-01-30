@@ -73,17 +73,46 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
           })
           console.log('✅ Cargando evaluación existente del día')
         } else {
-          // ✅ Si no ha sido evaluado hoy, iniciar con valores base
+          // ✅ Si no ha sido evaluado hoy, iniciar con valores por defecto (0 = ausente)
           setEvaluation({
-            actitud: 5,
-            puntualidad_asistencia: 5,
-            animo: 5,
-            trabajo_manual: 5,
-            verso_memoria: 15,
-            aprestamiento_biblico: 15,
+            actitud: 0,
+            puntualidad_asistencia: 0,
+            animo: 0,
+            trabajo_manual: 0,
+            verso_memoria: 0,
+            aprestamiento_biblico: 0,
             invitados_hoy: 0
           })
-          console.log('🆕 Iniciando nueva evaluación (valores base)')
+          console.log('🆕 Iniciando nueva evaluación (valores por defecto: 0 = ausente)')
+          
+          // Guardar inmediatamente los valores por defecto
+          try {
+            const { savePuntuacionIndividual } = await import('@/lib/supabaseQueries')
+            
+            // Solo incluir maestro_registro_id si es un UUID válido
+            const maestroId = localStorage.getItem('staffUserId')
+            
+            const defaultData: any = {
+              alumno_id: alumnoId,
+              fecha: getFechaHoyPeru(),
+              actitud: 0,
+              puntualidad_asistencia: 0,
+              animo: 0,
+              trabajo_manual: 0,
+              verso_memoria: 0,
+              aprestamiento_biblico: 0,
+              invitados_hoy: 0,
+            }
+            
+            if (maestroId && maestroId !== 'temp-maestro-id') {
+              defaultData.maestro_registro_id = maestroId
+            }
+            
+            await savePuntuacionIndividual(defaultData)
+            console.log('✅ Evaluación por defecto guardada en BD')
+          } catch (error) {
+            console.error('❌ Error guardando evaluación por defecto:', error)
+          }
         }
       } catch (error) {
         console.error('Error loading alumno:', error)

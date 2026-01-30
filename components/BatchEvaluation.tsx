@@ -146,10 +146,43 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
 
         console.log('📊 Evaluaciones de HOY encontradas:', data?.length || 0)
 
-        // Si no hay evaluaciones de hoy, empezar con evaluaciones vacías (en 0)
+        // Si no hay evaluaciones de hoy, iniciar con valores por defecto (0 = ausente)
         if (!data || data.length === 0) {
-          console.log('🆕 Sin evaluaciones hoy - empezando desde 0')
-          setEvaluations({})  // Evaluaciones vacías
+          console.log('🆕 Sin evaluaciones hoy - iniciando con valores por defecto (0 = ausente)')
+          
+          // Crear evaluaciones por defecto para todos los alumnos
+          const defaultEvaluations = alumnos.reduce((acc, alumno) => {
+            acc[alumno.id] = {
+              alumno_id: alumno.id,
+              fecha: today,
+              puntualidad_asistencia: 0,    // Ausente por defecto
+              actitud: 0,                   // No cumple por defecto
+              animo: 0,                     // No cumple por defecto
+              trabajo_manual: 0,            // No cumple por defecto
+              verso_memoria: 0,             // No cumple por defecto
+              aprestamiento_biblico: 0,     // No cumple por defecto
+              invitados_hoy: 0,             // Sin invitados por defecto
+            }
+            return acc
+          }, {} as Record<string, any>)
+          
+          // Guardar automáticamente todas las evaluaciones por defecto en la BD
+          console.log('💾 Guardando evaluaciones por defecto en BD...')
+          const { error: bulkInsertError } = await supabase
+            .from('puntuacion_individual_diaria')
+            .insert(Object.values(defaultEvaluations))
+
+          if (bulkInsertError) {
+            console.error('❌ Error guardando evaluaciones por defecto:', bulkInsertError)
+            // Si falla el guardado masivo, continuar con valores locales
+            setEvaluations(defaultEvaluations)
+            console.log('⚠️ Evaluaciones por defecto solo en memoria local')
+          } else {
+            console.log('✅ Evaluaciones por defecto guardadas en BD')
+            setEvaluations(defaultEvaluations)
+          }
+          
+          console.log(`✅ Creadas ${Object.keys(defaultEvaluations).length} evaluaciones por defecto`)
           return
         }
 
@@ -472,10 +505,10 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
                        <div>
                         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                           <p className="text-sm text-blue-700">
-                            💡 <strong>Registra aquí la asistencia</strong>: 
-                            <br />• "Cumple (10)" - Alumno presente a tiempo
-                            <br />• "Parcial (5)" - Alumno presente pero tardío 
-                            <br />• "No cumple (0)" - Alumno ausente
+                            💡 <strong>Estado de asistencia inicial</strong>: 
+                            <br />• Todos los alumnos empiezan como "No cumple (0)" = ausente
+                            <br />• Cambia a "Cumple (10)" si presente a tiempo
+                            <br />• Cambia a "Parcial (5)" si presente pero tardío
                             <br />✅ Solo alumnos con 5 o 10 puntos aparecerán en las demás categorías.
                           </p>
                         </div>
@@ -904,28 +937,28 @@ function BatchCriterionTab({
                        </div>
                      )}
                   </div>
-                 ) : (
-                   <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
-                     {options.map((option) => (
-                       <button
-                         key={option.value}
-                         onClick={() => onRadioChange(alumno.id, field, option.value)}
-                         className={`px-2 py-2 sm:px-3 sm:py-2 rounded border font-medium transition-all duration-200 min-w-[60px] sm:min-w-[70px] ${currentValue === option.value
-                           ? 'border-blue-500 bg-blue-50 text-blue-700'
-                           : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                           } ${option.color}`}
-                         title={`${option.label} (${option.value} puntos)`}
-                       >
-                         <div className="text-xs font-medium leading-tight">
-                           {option.label}
-                         </div>
-                         <div className="text-xs sm:text-sm font-bold">
-                           ({option.value})
-                         </div>
-                       </button>
-                     ))}
-                   </div>
-                 )}
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
+                      {options.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => onRadioChange(alumno.id, field, option.value)}
+                          className={`px-2 py-2 sm:px-3 sm:py-2 rounded border font-medium transition-all duration-200 min-w-[60px] sm:min-w-[70px] ${currentValue === option.value
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                            } ${option.color}`}
+                          title={`${option.label} (${option.value} puntos)`}
+                        >
+                          <div className="text-xs font-medium leading-tight">
+                            {option.label}
+                          </div>
+                          <div className="text-xs sm:text-sm font-bold">
+                            ({option.value})
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
               </div>
             </div>
           )
