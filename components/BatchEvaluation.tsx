@@ -30,9 +30,9 @@ const PUNTUACION_OPTIONS = {
     { value: 10, label: "Cumple", color: "text-green-600" }
   ],
   puntualidad_asistencia: [
-    { value: 0, label: "No cumple", color: "text-red-600" },
-    { value: 5, label: "Parcial", color: "text-yellow-600" },
-    { value: 10, label: "Cumple", color: "text-green-600" }
+    { value: 0, label: "Ausente", color: "text-red-600" },
+    { value: 5, label: "Tardío", color: "text-yellow-600" },
+    { value: 10, label: "Presente", color: "text-green-600" }
   ],
   animo: [
     { value: 0, label: "No cumple", color: "text-red-600" },
@@ -465,12 +465,15 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
                     <Tabs value={subTab} onValueChange={setSubTab} className="w-full">
                       <div className="bg-gray-100 rounded-lg p-1 overflow-x-auto">
                         <TabsList className="grid w-full min-w-max grid-cols-3 h-auto bg-transparent p-0 gap-1">
-                          <TabsTrigger
-                            value="puntualidad_asistencia"
-                            className="text-xs py-2 px-2 h-auto min-h-[36px] font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md whitespace-nowrap"
-                          >
-                            Puntualidad
-                          </TabsTrigger>
+                           <TabsTrigger
+                             value="puntualidad_asistencia"
+                             className="text-xs py-2 px-2 h-auto min-h-[36px] font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md whitespace-nowrap"
+                           >
+                             Asistencia
+                             <div className="text-xs text-muted-foreground block">
+                               Punt.
+                             </div>
+                           </TabsTrigger>
                           <TabsTrigger
                             value="actitud"
                             className="text-xs py-2 px-2 h-auto min-h-[36px] font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md whitespace-nowrap"
@@ -493,11 +496,11 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
                        <div>
                         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                           <p className="text-sm text-blue-700">
-                            💡 <strong>Estado de asistencia inicial</strong>: 
-                            <br />• Todos los alumnos empiezan como "No cumple (0)" = ausente
-                            <br />• Cambia a "Cumple (10)" si presente a tiempo
-                            <br />• Cambia a "Parcial (5)" si presente pero tardío
-                            <br />✅ Solo alumnos con 5 o 10 puntos aparecerán en las demás categorías.
+                            💡 <strong>Registro de Asistencia</strong>: 
+                            <br />• Todos los alumnos empiezan como "Ausente (0)"
+                            <br />• Cambia a "Presente (10)" si llegó a tiempo
+                            <br />• Cambia a "Tardío (5)" si llegó tarde
+                            <br />✅ Solo alumnos presentes aparecerán en las demás pestañas.
                           </p>
                         </div>
                          <BatchCriterionTab
@@ -715,13 +718,13 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
                            No hay alumnos presentes para registrar visitas
                          </h3>
                          <p className="text-gray-500 mb-4">
-                           Marca asistencia con "Cumple (10)" o "Parcial (5)" en "Básicos" → "Puntualidad" primero.
+                           Marca asistencia en "Básicos" → "Asistencia" primero.
                          </p>
                          <Button 
                            onClick={() => {setMainTab("basicos"); setSubTab("puntualidad_asistencia")}}
                            variant="outline"
                          >
-                           Ir a Puntualidad
+                           Ir a Asistencia
                          </Button>
                        </div>
                      ) : (
