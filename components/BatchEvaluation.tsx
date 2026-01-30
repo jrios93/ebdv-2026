@@ -108,7 +108,8 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
     
     // Filtro de asistencia: mostrar alumnos con puntualidad_asistencia >= 5 (presentes o tardíazos)
     // EXCEPTO en el tab de puntualidad (donde se registra la asistencia)
-    const hasAssistance = evaluations[alumno.id]?.puntualidad_asistencia >= 5
+    const evaluation = evaluations[alumno.id]
+    const hasAssistance = evaluation && evaluation.puntualidad_asistencia >= 5
     const showInOtherTabs = subTab === "puntualidad_asistencia" || hasAssistance
     
     return matchesSearch && showInOtherTabs
@@ -131,15 +132,16 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
       if (!maestroId || alumnos.length === 0) return
 
       try {
-        console.log('🔍 Cargando evaluaciones de HOY:', { today, alumnoCount: alumnos.length })
-        console.log('📝 NOTA: Sin filtro por maestro_registro_id para mostrar todas las evaluaciones del día')
+        console.log('🔍 Cargando evaluaciones de HOY:', { today, alumnoCount: alumnos.length, maestroId })
+        console.log('📝 NOTA: Filtrando por maestro_registro_id para mostrar solo evaluaciones del maestro actual')
 
-        // IMPORTANTE: Solo cargar evaluaciones de HOY para no confundir con días anteriores
-        // NOTA: No filtramos por maestro_registro_id para ser consistentes con evaluación individual
+        // IMPORTANTE: Solo cargar evaluaciones de HOY y del maestro actual
+        console.log('📝 FILTRANDO por maestro_registro_id:', maestroId)
         const { data, error } = await supabase
           .from('puntuacion_individual_diaria')
           .select('*')
           .eq('fecha', today)  // <- Clave: SOLO fecha de hoy
+          .eq('maestro_registro_id', maestroId)  // <- Filtrar por maestro actual
           .in('alumno_id', alumnos.map(a => a.id))
 
         if (error) throw error
@@ -205,31 +207,51 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
       const existingEvaluation = evaluations[alumnoId]
       const updateData = { [field]: value, maestro_registro_id: maestroId }
 
-      if (existingEvaluation) {
-        // Actualizar evaluación existente
-        const { error } = await supabase
+      console.log(`🔄 Guardando ${alumnoId} - ${field}: ${value}`, { existingEvaluation, updateData })
+
+      if (existingEvaluation?.id) {
+        // Actualizar evaluación existente - VERIFICAR SI TIENE ID
+        console.log('📝 Actualizando evaluación existente:', existingEvaluation.id)
+        const { data, error } = await supabase
           .from('puntuacion_individual_diaria')
           .update(updateData)
           .eq('id', existingEvaluation.id)
+          .select()
 
-        if (error) throw error
+        if (error) {
+          console.error('❌ Error actualizando:', error)
+          throw error
+        }
 
         setEvaluations(prev => ({
           ...prev,
-          [alumnoId]: { ...prev[alumnoId], ...updateData }
+          [alumnoId]: { ...prev[alumnoId], ...updateData, id: data[0].id }
         }))
       } else {
-        // Crear nueva evaluación
+        // Crear nueva evaluación con todos los campos por defecto
+        console.log('➕ Creando nueva evaluación')
+        const fullEvaluation = {
+          alumno_id: alumnoId,
+          fecha: today,
+          puntualidad_asistencia: 0,
+          actitud: 0,
+          animo: 0,
+          trabajo_manual: 0,
+          verso_memoria: 0,
+          aprestamiento_biblico: 0,
+          invitados_hoy: 0,
+          ...updateData  // Sobrescribe el campo específico que se está guardando
+        }
+        
         const { data, error } = await supabase
           .from('puntuacion_individual_diaria')
-          .insert({
-            alumno_id: alumnoId,
-            fecha: today,
-            ...updateData
-          })
+          .insert(fullEvaluation)
           .select()
 
-        if (error) throw error
+        if (error) {
+          console.error('❌ Error insertando:', error)
+          throw error
+        }
 
         setEvaluations(prev => ({
           ...prev,
@@ -328,7 +350,10 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
           // Actualizar
           const { error } = await supabase
             .from('puntuacion_individual_diaria')
-            .update(evaluationData)
+            .update({
+              ...evaluationData,
+              maestro_registro_id: maestroId  // Asegurar que se incluya
+            })
             .eq('id', existingEvaluation.id)
 
           if (!error) savedCount++
