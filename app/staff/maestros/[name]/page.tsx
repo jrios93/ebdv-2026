@@ -16,6 +16,7 @@ import {
   getPuntuacionIndividualHoy,
   type Alumno
 } from "@/lib/supabaseQueries"
+import { getFechaHoyPeru } from "@/lib/date/config"
 
 interface AlumnoConEstado extends Alumno {
   evaluado: boolean
@@ -51,7 +52,7 @@ export default function MaestrosClassroomPage({ params }: { params: Promise<{ na
 
       // Cargar alumnos del classroom
       const alumnosData = await getAlumnosByClassroom(classroomId)
-      const today = new Date().toISOString().split('T')[0]
+      const today = getFechaHoyPeru()
 
       // Para cada alumno, verificar si ya fue evaluado hoy
       const alumnosConEstado = await Promise.all(

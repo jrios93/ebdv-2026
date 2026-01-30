@@ -29,10 +29,11 @@ export const DEFAULT_DATETIME_OPTIONS: Intl.DateTimeFormatOptions = {
 
 // Función centralizada para obtener fecha actual en formato YYYY-MM-DD (Perú)
 export function getFechaHoyPeru(): string {
-  // Usar toISOString() y formato manual para timezone Perú
-  const now = new Date()
-  const offset = -5 // Perú es UTC-5
-  const peruTime = new Date(now.getTime() + offset * 60 * 60 * 1000)
-  
-  return peruTime.toISOString().split('T')[0] // YYYY-MM-DD
+  // Usar método más robusto con timezone específico
+  return new Date().toLocaleDateString('en-CA', { 
+    timeZone: 'America/Lima',
+    year: 'numeric', 
+    month: '2-digit', 
+    day: '2-digit' 
+  }) // YYYY-MM-DD
 }

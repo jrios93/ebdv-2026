@@ -13,6 +13,7 @@ import {
   savePuntuacionIndividual,
   getPuntuacionIndividualHoy
 } from "@/lib/supabaseQueries"
+import { getFechaHoyPeru } from "@/lib/date/config"
 import { ScoreSelector } from "@/components/ui/score-selector"
 import { PreguntasSelector } from "@/components/ui/preguntas-selector"
 import { InvitadosSelector } from "@/components/ui/invitados-selector"
@@ -55,7 +56,7 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
         setAlumno(alumnoData)
 
         // Verificar si ya tiene puntuación hoy
-        const today = new Date().toISOString().split('T')[0]
+        const today = getFechaHoyPeru()
         const puntuacionExistente = await getPuntuacionIndividualHoy(alumnoId, today)
 
         // 🎯 LÓGICA INTELIGENTE DE CARGA
@@ -122,7 +123,7 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
 
       const puntuacionData: any = {
         alumno_id: alumnoId,
-        fecha: new Date().toISOString().split('T')[0],
+        fecha: getFechaHoyPeru(),
         actitud: evaluation.actitud,
         puntualidad_asistencia: evaluation.puntualidad_asistencia,
         animo: evaluation.animo,
