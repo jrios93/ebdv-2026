@@ -106,9 +106,9 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
     const matchesSearch = alumno.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          alumno.apellidos.toLowerCase().includes(searchTerm.toLowerCase())
     
-    // Filtro de asistencia: solo mostrar alumnos con puntualidad_asistencia > 0 
+    // Filtro de asistencia: mostrar alumnos con puntualidad_asistencia >= 5 (presentes o tardíazos)
     // EXCEPTO en el tab de puntualidad (donde se registra la asistencia)
-    const hasAssistance = evaluations[alumno.id]?.puntualidad_asistencia > 0
+    const hasAssistance = evaluations[alumno.id]?.puntualidad_asistencia >= 5
     const showInOtherTabs = subTab === "puntualidad_asistencia" || hasAssistance
     
     return matchesSearch && showInOtherTabs
@@ -338,7 +338,7 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
   const getStats = () => {
     const total = alumnos.length
     const evaluated = Object.keys(evaluations).length
-    const present = Object.values(evaluations).filter(e => e.puntualidad_asistencia > 0).length
+    const present = Object.values(evaluations).filter(e => e.puntualidad_asistencia >= 5).length
     const pending = total - present
     const completed = Object.values(evaluations).filter(evaluation =>
       evaluation.actitud !== undefined &&
@@ -469,12 +469,15 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
                    <div className="mt-4">
                      {subTab === "puntualidad_asistencia" && (
                        <div>
-                         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                           <p className="text-sm text-blue-700">
-                             💡 <strong>Registra aquí la asistencia</strong>: Marca "Cumple (10)" para alumnos presentes o "No cumple (0)" para ausentes.
-                             Solo los alumnos marcados como presentes aparecerán en las demás categorías.
-                           </p>
-                         </div>
+                        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <p className="text-sm text-blue-700">
+                            💡 <strong>Registra aquí la asistencia</strong>: 
+                            <br />• "Cumple (10)" - Alumno presente a tiempo
+                            <br />• "Parcial (5)" - Alumno presente pero tardío 
+                            <br />• "No cumple (0)" - Alumno ausente
+                            <br />✅ Solo alumnos con 5 o 10 puntos aparecerán en las demás categorías.
+                          </p>
+                        </div>
                          <BatchCriterionTab
                            title="Puntualidad y Asistencia"
                            field="puntualidad_asistencia"
@@ -690,7 +693,7 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
                            No hay alumnos presentes para registrar visitas
                          </h3>
                          <p className="text-gray-500 mb-4">
-                           Ve a la pestaña "Básicos" → "Puntualidad" y marca la asistencia de los alumnos primero.
+                           Marca asistencia con "Cumple (10)" o "Parcial (5)" en "Básicos" → "Puntualidad" primero.
                          </p>
                          <Button 
                            onClick={() => {setMainTab("basicos"); setSubTab("puntualidad_asistencia")}}
