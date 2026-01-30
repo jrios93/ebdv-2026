@@ -12,6 +12,7 @@ import { toast } from "sonner"
 import { Users, Zap, User, CheckCircle, Clock, AlertCircle, RefreshCw, Save, Undo2, Search, ArrowLeft, Clock as ClockIcon, Smile, Wrench, FileText, BookOpen, Users as UsersIcon, Minus, Plus } from "lucide-react"
 import { getClassroomInfo } from "@/lib/classroom"
 import { supabase } from "@/lib/supabase"
+import { getFechaHoyPeru } from "@/lib/date/config"
 
 // Mapa de IDs a nombres de salones
 const CLASSROOM_IDS: Record<string, string> = {
@@ -97,13 +98,21 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
   const [invitadosCount, setInvitadosCount] = useState<Record<string, number>>({})
 
   const classroomInfo = getClassroomInfo(CLASSROOM_IDS[classroomId] || "vida")
-  const today = new Date().toISOString().split('T')[0]
+  const today = getFechaHoyPeru()
 
-  // Filtrar alumnos por búsqueda
-  const filteredAlumnos = alumnos.filter(alumno =>
-    alumno.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    alumno.apellidos.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  // Filtrar alumnos por búsqueda y asistencia
+  const filteredAlumnos = alumnos.filter(alumno => {
+    // Filtro de búsqueda
+    const matchesSearch = alumno.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         alumno.apellidos.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    // Filtro de asistencia: solo mostrar alumnos con puntualidad_asistencia > 0 
+    // EXCEPTO en el tab de puntualidad (donde se registra la asistencia)
+    const hasAssistance = evaluations[alumno.id]?.puntualidad_asistencia > 0
+    const showInOtherTabs = subTab === "puntualidad_asistencia" || hasAssistance
+    
+    return matchesSearch && showInOtherTabs
+  })
 
   // Establecer subtab inicial según el tab principal
   useEffect(() => {
@@ -329,14 +338,15 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
   const getStats = () => {
     const total = alumnos.length
     const evaluated = Object.keys(evaluations).length
-    const pending = total - evaluated
+    const present = Object.values(evaluations).filter(e => e.puntualidad_asistencia > 0).length
+    const pending = total - present
     const completed = Object.values(evaluations).filter(evaluation =>
       evaluation.actitud !== undefined &&
       evaluation.puntualidad_asistencia !== undefined &&
       evaluation.animo !== undefined
     ).length
 
-    return { total, evaluated, pending, completed }
+    return { total, evaluated, present, pending, completed }
   }
 
   const stats = getStats()
@@ -362,18 +372,22 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
         {/* Estadísticas responsivas */}
         <Card className="shadow-sm mb-4 sm:mb-6">
           <CardContent className="p-4 sm:p-6">
-            <div className="grid grid-cols-3 gap-3 sm:gap-6 text-center sm:text-left">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 text-center sm:text-left">
               <div className="text-center sm:text-left">
                 <div className="text-lg sm:text-xl font-semibold text-blue-600">{stats.total}</div>
                 <div className="text-xs sm:text-sm text-muted-foreground">Total</div>
               </div>
               <div className="text-center sm:text-left">
-                <div className="text-lg sm:text-xl font-semibold text-green-600">{stats.evaluated}</div>
+                <div className="text-lg sm:text-xl font-semibold text-green-600">{stats.present}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Presentes</div>
+              </div>
+              <div className="text-center sm:text-left">
+                <div className="text-lg sm:text-xl font-semibold text-yellow-600">{stats.evaluated}</div>
                 <div className="text-xs sm:text-sm text-muted-foreground">Evaluados</div>
               </div>
               <div className="text-center sm:text-left">
                 <div className="text-lg sm:text-xl font-semibold text-orange-600">{stats.pending}</div>
-                <div className="text-xs sm:text-sm text-muted-foreground">Pendientes</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Ausentes</div>
               </div>
             </div>
           </CardContent>
@@ -452,42 +466,90 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
                     </Tabs>
                   </div>
 
-                  <div className="mt-4">
-                    {subTab === "puntualidad_asistencia" && (
-                      <BatchCriterionTab
-                        title="Puntualidad y Asistencia"
-                        field="puntualidad_asistencia"
-                        alumnos={filteredAlumnos}
-                        evaluations={evaluations}
-                        onRadioChange={handleRadioChange}
-                        recentSaves={recentSaves}
-                        options={PUNTUACION_OPTIONS.puntualidad_asistencia}
-                      />
-                    )}
+                   <div className="mt-4">
+                     {subTab === "puntualidad_asistencia" && (
+                       <div>
+                         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                           <p className="text-sm text-blue-700">
+                             💡 <strong>Registra aquí la asistencia</strong>: Marca "Cumple (10)" para alumnos presentes o "No cumple (0)" para ausentes.
+                             Solo los alumnos marcados como presentes aparecerán en las demás categorías.
+                           </p>
+                         </div>
+                         <BatchCriterionTab
+                           title="Puntualidad y Asistencia"
+                           field="puntualidad_asistencia"
+                           alumnos={filteredAlumnos}
+                           evaluations={evaluations}
+                           onRadioChange={handleRadioChange}
+                           recentSaves={recentSaves}
+                           options={PUNTUACION_OPTIONS.puntualidad_asistencia}
+                         />
+                       </div>
+                     )}
 
-                    {subTab === "actitud" && (
-                      <BatchCriterionTab
-                        title="Actitud"
-                        field="actitud"
-                        alumnos={filteredAlumnos}
-                        evaluations={evaluations}
-                        onRadioChange={handleRadioChange}
-                        recentSaves={recentSaves}
-                        options={PUNTUACION_OPTIONS.actitud}
-                      />
-                    )}
+                     {subTab === "actitud" && (
+                       <div>
+                         {filteredAlumnos.length === 0 ? (
+                           <div className="text-center py-12">
+                             <AlertCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                             <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                               No hay alumnos presentes para evaluar
+                             </h3>
+                             <p className="text-gray-500 mb-4">
+                               Ve a la pestaña "Puntualidad" y marca la asistencia de los alumnos primero.
+                             </p>
+                             <Button 
+                               onClick={() => setSubTab("puntualidad_asistencia")}
+                               variant="outline"
+                             >
+                               Ir a Puntualidad
+                             </Button>
+                           </div>
+                         ) : (
+                           <BatchCriterionTab
+                             title="Actitud"
+                             field="actitud"
+                             alumnos={filteredAlumnos}
+                             evaluations={evaluations}
+                             onRadioChange={handleRadioChange}
+                             recentSaves={recentSaves}
+                             options={PUNTUACION_OPTIONS.actitud}
+                           />
+                         )}
+                       </div>
+                     )}
 
-                    {subTab === "animo" && (
-                      <BatchCriterionTab
-                        title="Ánimo"
-                        field="animo"
-                        alumnos={filteredAlumnos}
-                        evaluations={evaluations}
-                        onRadioChange={handleRadioChange}
-                        recentSaves={recentSaves}
-                        options={PUNTUACION_OPTIONS.animo}
-                      />
-                    )}
+                     {subTab === "animo" && (
+                       <div>
+                         {filteredAlumnos.length === 0 ? (
+                           <div className="text-center py-12">
+                             <AlertCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                             <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                               No hay alumnos presentes para evaluar
+                             </h3>
+                             <p className="text-gray-500 mb-4">
+                               Ve a la pestaña "Puntualidad" y marca la asistencia de los alumnos primero.
+                             </p>
+                             <Button 
+                               onClick={() => setSubTab("puntualidad_asistencia")}
+                               variant="outline"
+                             >
+                               Ir a Puntualidad
+                             </Button>
+                           </div>
+                         ) : (
+                           <BatchCriterionTab
+                             title="Ánimo"
+                             field="animo"
+                             alumnos={filteredAlumnos}
+                             evaluations={evaluations}
+                             onRadioChange={handleRadioChange}
+                             recentSaves={recentSaves}
+                             options={PUNTUACION_OPTIONS.animo}
+                           />
+                         )}
+                       </div>
+                     )}
                   </div>
                 </TabsContent>
 
@@ -520,61 +582,139 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
                     </Tabs>
                   </div>
 
-                  <div className="mt-4">
-                    {subTab === "trabajo_manual" && (
-                      <BatchCriterionTab
-                        title="Trabajo Manual"
-                        field="trabajo_manual"
-                        alumnos={filteredAlumnos}
-                        evaluations={evaluations}
-                        onRadioChange={handleRadioChange}
-                        recentSaves={recentSaves}
-                        options={PUNTUACION_OPTIONS.trabajo_manual}
-                      />
-                    )}
+                   <div className="mt-4">
+                     {subTab === "trabajo_manual" && (
+                       <div>
+                         {filteredAlumnos.length === 0 ? (
+                           <div className="text-center py-12">
+                             <AlertCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                             <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                               No hay alumnos presentes para evaluar
+                             </h3>
+                             <p className="text-gray-500 mb-4">
+                               Ve a la pestaña "Básicos" → "Puntualidad" y marca la asistencia de los alumnos primero.
+                             </p>
+                             <Button 
+                               onClick={() => {setMainTab("basicos"); setSubTab("puntualidad_asistencia")}}
+                               variant="outline"
+                             >
+                               Ir a Puntualidad
+                             </Button>
+                           </div>
+                         ) : (
+                           <BatchCriterionTab
+                             title="Trabajo Manual"
+                             field="trabajo_manual"
+                             alumnos={filteredAlumnos}
+                             evaluations={evaluations}
+                             onRadioChange={handleRadioChange}
+                             recentSaves={recentSaves}
+                             options={PUNTUACION_OPTIONS.trabajo_manual}
+                           />
+                         )}
+                       </div>
+                     )}
 
-                    {subTab === "verso_memoria" && (
-                      <BatchCriterionTab
-                        title="Verso de Memoria"
-                        field="verso_memoria"
-                        alumnos={filteredAlumnos}
-                        evaluations={evaluations}
-                        onRadioChange={handleRadioChange}
-                        recentSaves={recentSaves}
-                        options={PUNTUACION_OPTIONS.verso_memoria}
-                      />
-                    )}
+                     {subTab === "verso_memoria" && (
+                       <div>
+                         {filteredAlumnos.length === 0 ? (
+                           <div className="text-center py-12">
+                             <AlertCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                             <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                               No hay alumnos presentes para evaluar
+                             </h3>
+                             <p className="text-gray-500 mb-4">
+                               Ve a la pestaña "Básicos" → "Puntualidad" y marca la asistencia de los alumnos primero.
+                             </p>
+                             <Button 
+                               onClick={() => {setMainTab("basicos"); setSubTab("puntualidad_asistencia")}}
+                               variant="outline"
+                             >
+                               Ir a Puntualidad
+                             </Button>
+                           </div>
+                         ) : (
+                           <BatchCriterionTab
+                             title="Verso de Memoria"
+                             field="verso_memoria"
+                             alumnos={filteredAlumnos}
+                             evaluations={evaluations}
+                             onRadioChange={handleRadioChange}
+                             recentSaves={recentSaves}
+                             options={PUNTUACION_OPTIONS.verso_memoria}
+                           />
+                         )}
+                       </div>
+                     )}
 
-                    {subTab === "aprestamiento_biblico" && (
-                      <BatchCriterionTab
-                        title="Aprestamiento Bíblico"
-                        field="aprestamiento_biblico"
-                        alumnos={filteredAlumnos}
-                        evaluations={evaluations}
-                        onRadioChange={handleRadioChange}
-                        recentSaves={recentSaves}
-                        options={PUNTUACION_OPTIONS.aprestamiento_biblico}
-                      />
-                    )}
+                     {subTab === "aprestamiento_biblico" && (
+                       <div>
+                         {filteredAlumnos.length === 0 ? (
+                           <div className="text-center py-12">
+                             <AlertCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                             <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                               No hay alumnos presentes para evaluar
+                             </h3>
+                             <p className="text-gray-500 mb-4">
+                               Ve a la pestaña "Básicos" → "Puntualidad" y marca la asistencia de los alumnos primero.
+                             </p>
+                             <Button 
+                               onClick={() => {setMainTab("basicos"); setSubTab("puntualidad_asistencia")}}
+                               variant="outline"
+                             >
+                               Ir a Puntualidad
+                             </Button>
+                           </div>
+                         ) : (
+                           <BatchCriterionTab
+                             title="Aprestamiento Bíblico"
+                             field="aprestamiento_biblico"
+                             alumnos={filteredAlumnos}
+                             evaluations={evaluations}
+                             onRadioChange={handleRadioChange}
+                             recentSaves={recentSaves}
+                             options={PUNTUACION_OPTIONS.aprestamiento_biblico}
+                           />
+                         )}
+                       </div>
+                     )}
                   </div>
                 </TabsContent>
 
-                <TabsContent value="visitas" className="mt-6">
-                  <div className="mt-4">
-                    <BatchCriterionTab
-                      title="Visitas e Invitados"
-                      field="invitados_hoy"
-                      alumnos={filteredAlumnos}
-                      evaluations={evaluations}
-                      onRadioChange={handleRadioChange}
-                      recentSaves={recentSaves}
-                      options={[]} // Sin opciones, usa botón clásico
-                      isVisitas={true}
-                      invitadosCount={invitadosCount}
-                      onInvitadosChange={setInvitadosCount}
-                    />
-                  </div>
-                </TabsContent>
+                 <TabsContent value="visitas" className="mt-6">
+                   <div className="mt-4">
+                     {filteredAlumnos.length === 0 ? (
+                       <div className="text-center py-12">
+                         <AlertCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                         <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                           No hay alumnos presentes para registrar visitas
+                         </h3>
+                         <p className="text-gray-500 mb-4">
+                           Ve a la pestaña "Básicos" → "Puntualidad" y marca la asistencia de los alumnos primero.
+                         </p>
+                         <Button 
+                           onClick={() => {setMainTab("basicos"); setSubTab("puntualidad_asistencia")}}
+                           variant="outline"
+                         >
+                           Ir a Puntualidad
+                         </Button>
+                       </div>
+                     ) : (
+                       <BatchCriterionTab
+                         title="Visitas e Invitados"
+                         field="invitados_hoy"
+                         alumnos={filteredAlumnos}
+                         evaluations={evaluations}
+                         onRadioChange={handleRadioChange}
+                         recentSaves={recentSaves}
+                         options={[]} // Sin opciones, usa botón clásico
+                         isVisitas={true}
+                         invitadosCount={invitadosCount}
+                         onInvitadosChange={setInvitadosCount}
+                       />
+                     )}
+                   </div>
+                 </TabsContent>
               </Tabs>
             </CardContent>
           </Card>
