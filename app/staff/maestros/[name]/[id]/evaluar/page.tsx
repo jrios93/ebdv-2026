@@ -85,34 +85,8 @@ export default function EvaluarAlumnoPage({ params }: { params: Promise<{ name: 
           })
           console.log('🆕 Iniciando nueva evaluación (valores por defecto: 0 = ausente)')
           
-          // Guardar inmediatamente los valores por defecto
-          try {
-            const { savePuntuacionIndividual } = await import('@/lib/supabaseQueries')
-            
-            // Solo incluir maestro_registro_id si es un UUID válido
-            const maestroId = localStorage.getItem('staffUserId')
-            
-            const defaultData: any = {
-              alumno_id: alumnoId,
-              fecha: getFechaHoyPeru(),
-              actitud: 0,
-              puntualidad_asistencia: 0,
-              animo: 0,
-              trabajo_manual: 0,
-              verso_memoria: 0,
-              aprestamiento_biblico: 0,
-              invitados_hoy: 0,
-            }
-            
-            if (maestroId && maestroId !== 'temp-maestro-id') {
-              defaultData.maestro_registro_id = maestroId
-            }
-            
-            await savePuntuacionIndividual(defaultData)
-            console.log('✅ Evaluación por defecto guardada en BD')
-          } catch (error) {
-            console.error('❌ Error guardando evaluación por defecto:', error)
-          }
+          // NO guardar automáticamente - esperar a que el maestro haga clic
+          console.log('⏸️ Esperando acción del maestro para guardar en BD')
         }
       } catch (error) {
         console.error('Error loading alumno:', error)

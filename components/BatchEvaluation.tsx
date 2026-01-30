@@ -166,23 +166,11 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
             return acc
           }, {} as Record<string, any>)
           
-          // Guardar automáticamente todas las evaluaciones por defecto en la BD
-          console.log('💾 Guardando evaluaciones por defecto en BD...')
-          const { error: bulkInsertError } = await supabase
-            .from('puntuacion_individual_diaria')
-            .insert(Object.values(defaultEvaluations))
-
-          if (bulkInsertError) {
-            console.error('❌ Error guardando evaluaciones por defecto:', bulkInsertError)
-            // Si falla el guardado masivo, continuar con valores locales
-            setEvaluations(defaultEvaluations)
-            console.log('⚠️ Evaluaciones por defecto solo en memoria local')
-          } else {
-            console.log('✅ Evaluaciones por defecto guardadas en BD')
-            setEvaluations(defaultEvaluations)
-          }
-          
-          console.log(`✅ Creadas ${Object.keys(defaultEvaluations).length} evaluaciones por defecto`)
+          // NO guardar automáticamente - mostrar valores por defecto pero esperar acción
+          console.log('📋 Mostrando evaluaciones por defecto (esperando acción del maestro)')
+          setEvaluations(defaultEvaluations)
+          console.log(`✅ Creadas ${Object.keys(defaultEvaluations).length} evaluaciones por defecto en memoria local`)
+          console.log('⏸️ Esperando acción del maestro para guardar en BD')
           return
         }
 
