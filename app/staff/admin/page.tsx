@@ -15,7 +15,8 @@ import {
   getAllSalonesEvaluadosToday,
   getAlumnosPorSalon,
   getResumenSemanal,
-  getPuntajesPorDiaYSalon
+  getPuntajesPorDiaYSalon,
+  getSalonWithAttendance
 } from "@/lib/supabaseQueries"
 import { supabase } from '@/lib/supabase'
 import {
@@ -84,6 +85,7 @@ export default function AdminPage() {
   const [isExporting, setIsExporting] = useState(false)
   const [isWeeklyExporting, setIsWeeklyExporting] = useState(false)
   const [realtimeStatus, setRealtimeStatus] = useState<'connected' | 'disconnected' | 'connecting'>('connecting')
+  const [salonesConAsistencia, setSalonesConAsistencia] = useState<Set<string>>(new Set())
 
   // Efecto para manejar realtime de Supabase
   useEffect(() => {
@@ -184,7 +186,34 @@ export default function AdminPage() {
   const puntajesPorDia = dashboardData?.puntajesPorDia || []
   const rankingInvitados = dashboardData?.rankingInvitados || []
   const campeonInvitadosActual = dashboardData?.campeonInvitadosActual || null
-  const totalInvitadosPeriodo = dashboardData?.totalInvitadosPeriodo || 0
+  const totalInvitadosPeriodo = dashboardData?.totalInvitadosPeriodo ||0
+
+  // Cargar datos de asistencia para el tablero
+  useEffect(() => {
+    const loadAttendanceData = async () => {
+      if (!puntajesPorDia.length) return
+
+      const asistenciaSet = new Set<string>()
+
+      // Para cada fecha en puntajesPorDia, verificar asistencia de cada salón
+      for (const puntaje of puntajesPorDia) {
+        const salonKey = `${puntaje.salon}-${puntaje.fecha}`
+        
+        try {
+          const tieneAsistencia = await getSalonWithAttendance(puntaje.fecha, puntaje.salon)
+          if (tieneAsistencia) {
+            asistenciaSet.add(salonKey)
+          }
+        } catch (error) {
+          console.error('Error verificando asistencia:', error)
+        }
+      }
+
+      setSalonesConAsistencia(asistenciaSet)
+    }
+
+    loadAttendanceData()
+  }, [puntajesPorDia])
 
   const exportEvaluacionesToExcel = async () => {
     setIsExporting(true)
@@ -402,29 +431,44 @@ export default function AdminPage() {
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-3">
                         {classrooms.map((classroom) => {
                           const puntajeDelDia = puntajes.find(p => p.salon.toLowerCase() === classroom.name)
+                          const salonKey = `${classroom.name}-${fecha}`
+                          const tieneAsistencia = salonesConAsistencia.has(salonKey)
                           const IconComponent = classroom.icon
+
+                          // Determinar el estado visual
+                          let visualClass = ''
+                          let estadoTexto = ''
+
+                          if (!puntajeDelDia) {
+                            visualClass = 'bg-gray-100 border-gray-300 border-dashed opacity-60'
+                            estadoTexto = 'Sin evaluación'
+                          } else if (!tieneAsistencia) {
+                            visualClass = 'bg-gray-50 border-gray-400 border-dashed opacity-40'
+                            estadoTexto = 'Sin asistencia'
+                          } else {
+                            visualClass = `${classroom.color} border-opacity-60 shadow-sm`
+                            estadoTexto = 'Con asistencia'
+                          }
 
                           return (
                             <div
                               key={`${classroom.name}-${fecha}`}
-                              className={`relative rounded-lg border-2 p-2 sm:p-3 text-center transition-all duration-200 hover:scale-105 hover:shadow-lg ${puntajeDelDia
-                                  ? `${classroom.color} border-opacity-60 shadow-sm`
-                                  : 'bg-gray-100 border-gray-300 border-dashed opacity-60'
-                                }`}
+                              className={`relative rounded-lg border-2 p-2 sm:p-3 text-center transition-all duration-200 hover:scale-105 hover:shadow-lg ${visualClass}`}
+                              title={estadoTexto}
                             >
                               {/* Icono responsive */}
                               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/80 flex items-center justify-center mx-auto mb-1 sm:mb-2 shadow-sm">
-                                <IconComponent className={`w-4 h-4 sm:w-6 sm:h-6 ${puntajeDelDia ? '' : 'opacity-40'}`} />
+                                <IconComponent className={`w-4 h-4 sm:w-6 sm:h-6 ${puntajeDelDia && tieneAsistencia ? '' : 'opacity-40'}`} />
                               </div>
 
                               {/* Nombre del salón responsive */}
-                              <div className={`text-xs font-bold mb-1 capitalize ${puntajeDelDia ? 'text-gray-800' : 'text-gray-400'
+                              <div className={`text-xs font-bold mb-1 capitalize ${puntajeDelDia && tieneAsistencia ? 'text-gray-800' : 'text-gray-400'
                                 }`}>
                                 {classroom.name}
                               </div>
 
                               {/* Puntaje o esperando responsive */}
-                              {puntajeDelDia ? (
+                              {puntajeDelDia && tieneAsistencia ? (
                                 <div className="relative">
                                   <span className="text-sm sm:text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
                                     {puntajeDelDia.puntaje_promedio}
@@ -437,6 +481,11 @@ export default function AdminPage() {
                                       <Star className="w-2 h-2 sm:w-3 sm:h-3 text-yellow-800 fill-yellow-800" />
                                     </div>
                                   )}
+                                </div>
+                              ) : puntajeDelDia ? (
+                                <div className="text-xs text-gray-500">
+                                  <div>👤 0</div>
+                                  <div className="text-xs">asistencia</div>
                                 </div>
                               ) : (
                                 <div className="text-xs text-gray-400">

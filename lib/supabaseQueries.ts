@@ -1154,6 +1154,50 @@ export async function getTableroProgresoDiario(dias: number = 7): Promise<Tabler
 
 
 
+// Función para verificar si un salón tiene alumnos con asistencia en una fecha específica
+export async function getSalonWithAttendance(fecha: string, salonNombre: string): Promise<boolean> {
+  try {
+    // Primero obtener el ID del classroom
+    const { data: classroomData, error: classroomError } = await supabase
+      .from('classrooms')
+      .select('id')
+      .ilike('nombre', salonNombre)
+      .single()
+
+    if (classroomError || !classroomData) {
+      return false
+    }
+
+    // Luego obtener IDs de alumnos activos de ese classroom
+    const { data: alumnosData, error: alumnosError } = await supabase
+      .from('alumnos')
+      .select('id')
+      .eq('activo', true)
+      .eq('classroom_id', classroomData.id)
+
+    if (alumnosError || !alumnosData || alumnosData.length === 0) {
+      return false
+    }
+
+    const alumnoIds = alumnosData.map(a => a.id)
+
+    // Finalmente buscar si hay evaluaciones con asistencia > 0
+    const { data, error } = await supabase
+      .from('puntuacion_individual_diaria')
+      .select('alumno_id')
+      .eq('fecha', fecha)
+      .gt('puntualidad_asistencia', 0)
+      .in('alumno_id', alumnoIds)
+      .limit(1)
+
+    if (error) throw error
+    return data && data.length > 0
+  } catch (error) {
+    console.error('Error checking salon attendance:', error)
+    return false
+  }
+}
+
 export async function getResumenSemanal(): Promise<{
   rankingAlumnos: Array<{
     alumno: Alumno
