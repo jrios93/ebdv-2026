@@ -131,13 +131,14 @@ export default function BatchEvaluation({ classroomId, maestroId, alumnos, onBac
       if (!maestroId || alumnos.length === 0) return
 
       try {
-        console.log('🔍 Cargando evaluaciones de HOY:', { maestroId, today, alumnoCount: alumnos.length })
+        console.log('🔍 Cargando evaluaciones de HOY:', { today, alumnoCount: alumnos.length })
+        console.log('📝 NOTA: Sin filtro por maestro_registro_id para mostrar todas las evaluaciones del día')
 
         // IMPORTANTE: Solo cargar evaluaciones de HOY para no confundir con días anteriores
+        // NOTA: No filtramos por maestro_registro_id para ser consistentes con evaluación individual
         const { data, error } = await supabase
           .from('puntuacion_individual_diaria')
           .select('*')
-          .eq('maestro_registro_id', maestroId)
           .eq('fecha', today)  // <- Clave: SOLO fecha de hoy
           .in('alumno_id', alumnos.map(a => a.id))
 
